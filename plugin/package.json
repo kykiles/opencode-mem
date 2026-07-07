@@ -1,6 +1,6 @@
 {
   "name": "opencode-mem-plugin",
-  "version": "13.10.4",
+  "version": "13.10.5",
   "private": true,
   "description": "Runtime dependencies for opencode-mem bundled hooks",
   "type": "module",

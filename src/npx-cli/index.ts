@@ -24,7 +24,8 @@ ${styleText('bold', 'Install Commands')} (no Bun required):
   ${styleText('cyan', 'npx opencode-mem install')}              Interactive install
   ${styleText('cyan', 'npx opencode-mem install --ide <id>')}   Install for specific IDE
   ${styleText('cyan', 'npx opencode-mem install --provider claude|gemini|openrouter')}   Set LLM provider non-interactively
-  ${styleText('cyan', 'npx opencode-mem install --model <id>')}   Set Claude model (when provider=claude)
+  ${styleText('cyan', 'npx opencode-mem install --api-key <key>')}   API key for non-interactive installs
+  ${styleText('cyan', 'npx opencode-mem install --model <id>')}   Set model (when provider=claude)
   ${styleText('cyan', 'npx opencode-mem install --no-auto-start')}   Skip worker auto-start at the end
   ${styleText('cyan', 'npx opencode-mem install --runtime worker|server')}   Select runtime non-interactively (server brings up Docker pg+redis, generates an API key, injects the IDE MCP config)
   ${styleText('cyan', 'npx opencode-mem install --runtime server --server-url <url>')}   Point the server runtime at a specific base URL
@@ -63,6 +64,7 @@ function parseInstallOptions(argv: string[]): InstallOptions {
       ide: { type: 'string' },
       provider: { type: 'string' },
       model: { type: 'string' },
+      'api-key': { type: 'string' },
       runtime: { type: 'string' },
       'server-url': { type: 'string' },
       'no-auto-start': { type: 'boolean' },
@@ -87,6 +89,7 @@ function parseInstallOptions(argv: string[]): InstallOptions {
     ide: flag('ide'),
     provider: provider as InstallOptions['provider'],
     model: flag('model'),
+    apiKey: flag('api-key'),
     noAutoStart: values['no-auto-start'] === true,
     runtime: runtime as InstallOptions['runtime'],
     serverUrl: flag('server-url'),

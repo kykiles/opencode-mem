@@ -445,9 +445,18 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
         persistClaudeProvider();
         return 'claude';
       }
-      const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: options.provider });
+      const keyEnvName = options.provider === 'gemini'
+        ? 'OPENCODE_MEM_GEMINI_API_KEY'
+        : 'OPENCODE_MEM_OPENROUTER_API_KEY';
+      const settingsToMerge: Record<string, string> = { OPENCODE_MEM_PROVIDER: options.provider };
+      if (options.apiKey) {
+        settingsToMerge[keyEnvName] = options.apiKey;
+      }
+      const wrote = mergeSettings(settingsToMerge);
       if (wrote) log.info(`Saved provider=${options.provider} to ~/.opencode-mem/settings.json`);
-      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set OPENCODE_MEM_${options.provider.toUpperCase()}_API_KEY and OPENCODE_MEM_PROVIDER in settings.json or env manually if not already set.`);
+      if (!options.apiKey) {
+        log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set ${keyEnvName} in settings.json or .env manually if not already set.`);
+      }
       return options.provider;
     }
     return initialProvider;
@@ -827,6 +836,7 @@ export interface InstallOptions {
   ide?: string;
   provider?: 'claude' | 'gemini' | 'openrouter';
   model?: string;
+  apiKey?: string;
   noAutoStart?: boolean;
   disableAutoMemory?: boolean;
   // #2543 — non-interactive runtime selection. `server` is the operator-facing
@@ -973,6 +983,14 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
           message(`Caching v${version}...`);
           copyPluginToCache(version);
           return `Plugin cached (v${version}) ${styleText('green', 'OK')}`;
+        },
+      },
+      {
+        title: 'Populating marketplace directory',
+        task: async (message) => {
+          message('Copying plugin to marketplace...');
+          copyPluginToMarketplace();
+          return `Marketplace populated ${styleText('green', 'OK')}`;
         },
       },
       {
