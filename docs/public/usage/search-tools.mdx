@@ -9,7 +9,7 @@ Claude-mem provides persistent memory across sessions through **4 MCP tools** th
 
 ## Overview
 
-Instead of fetching all historical data upfront (expensive), claude-mem uses a progressive disclosure approach:
+Instead of fetching all historical data upfront (expensive), opencode-mem uses a progressive disclosure approach:
 
 1. **Search** → Get a compact index with IDs (~50-100 tokens/result)
 2. **Timeline** → Get context around interesting results
@@ -372,7 +372,7 @@ All observations include rich metadata:
 
 2. **Check database has data:**
    ```bash
-   WORKER_PORT=$(jq -r .CLAUDE_MEM_WORKER_PORT ~/.claude-mem/settings.json)
+   WORKER_PORT=$(jq -r .OPENCODE_MEM_WORKER_PORT ~/.opencode-mem/settings.json)
    curl "http://127.0.0.1:$WORKER_PORT/api/search?query=test"
    ```
 
@@ -443,7 +443,7 @@ If searches seem slow:
 
 **Worker Service:** Express API on the configured worker port, managed by Bun
 
-**Database:** SQLite FTS5 full-text search on `~/.claude-mem/claude-mem.db`
+**Database:** SQLite FTS5 full-text search on `~/.opencode-mem/opencode-mem.db`
 
 **Vector Search:** Chroma embeddings for semantic search (underlying implementation)
 

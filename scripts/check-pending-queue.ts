@@ -4,20 +4,20 @@ import { SettingsDefaultsManager } from '../src/shared/SettingsDefaultsManager.j
 import { USER_SETTINGS_PATH } from '../src/shared/paths.js';
 
 const workerSettings = SettingsDefaultsManager.loadFromFile(USER_SETTINGS_PATH);
-const DEFAULT_WORKER_HOST = workerSettings.CLAUDE_MEM_WORKER_HOST;
-const DEFAULT_WORKER_PORT = workerSettings.CLAUDE_MEM_WORKER_PORT;
+const DEFAULT_WORKER_HOST = workerSettings.OPENCODE_MEM_WORKER_HOST;
+const DEFAULT_WORKER_PORT = workerSettings.OPENCODE_MEM_WORKER_PORT;
 
 function resolveWorkerHost(): string {
-  return process.env.CLAUDE_MEM_WORKER_HOST || DEFAULT_WORKER_HOST;
+  return process.env.OPENCODE_MEM_WORKER_HOST || DEFAULT_WORKER_HOST;
 }
 
 function resolveWorkerPort(): string {
-  const raw = process.env.CLAUDE_MEM_WORKER_PORT;
+  const raw = process.env.OPENCODE_MEM_WORKER_PORT;
   if (raw === undefined || raw === '') return DEFAULT_WORKER_PORT;
   const parsed = parseInt(raw, 10);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
     console.warn(
-      `[check-pending-queue] Invalid CLAUDE_MEM_WORKER_PORT=${JSON.stringify(raw)}; ` +
+      `[check-pending-queue] Invalid OPENCODE_MEM_WORKER_PORT=${JSON.stringify(raw)}; ` +
         `falling back to ${DEFAULT_WORKER_PORT}`
     );
     return DEFAULT_WORKER_PORT;
@@ -137,8 +137,8 @@ Options:
   --process      Trigger processing without prompting
 
 Environment:
-  CLAUDE_MEM_WORKER_HOST  Worker host (default: ${DEFAULT_WORKER_HOST})
-  CLAUDE_MEM_WORKER_PORT  Worker port (default: ${DEFAULT_WORKER_PORT})
+  OPENCODE_MEM_WORKER_HOST  Worker host (default: ${DEFAULT_WORKER_HOST})
+  OPENCODE_MEM_WORKER_PORT  Worker port (default: ${DEFAULT_WORKER_PORT})
 
 Examples:
   # Check queue status interactively
@@ -148,7 +148,7 @@ Examples:
   bun scripts/check-pending-queue.ts --process
 
 What is this for?
-  If the claude-mem worker has unprocessed observations queued, this script
+  If the opencode-mem worker has unprocessed observations queued, this script
   reports the current queue depth and lets you trigger processing.
 `);
     process.exit(0);

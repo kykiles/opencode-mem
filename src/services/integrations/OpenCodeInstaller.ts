@@ -7,7 +7,7 @@ import { logger } from '../../utils/logger.js';
 import { CONTEXT_TAG_OPEN, CONTEXT_TAG_CLOSE, injectContextIntoMarkdownFile } from '../../utils/context-injection.js';
 import { getWorkerHost, getWorkerPort } from '../../shared/worker-utils.js';
 
-const OPENCODE_PLUGIN_CONFIG_PATH = './plugins/claude-mem.js';
+const OPENCODE_PLUGIN_CONFIG_PATH = './plugins/opencode-mem.js';
 
 type OpenCodeConfig = {
   $schema?: string;
@@ -35,7 +35,7 @@ export function getOpenCodeAgentsMdPath(): string {
 }
 
 export function getInstalledPluginPath(): string {
-  return path.join(getOpenCodePluginsDirectory(), 'claude-mem.js');
+  return path.join(getOpenCodePluginsDirectory(), 'opencode-mem.js');
 }
 
 function getOpenCodePluginEntries(config: OpenCodeConfig): unknown[] {
@@ -114,9 +114,9 @@ export function deregisterOpenCodePluginFromConfig(): number {
 
 export function findBuiltPluginPath(): string | null {
   const possiblePaths = [
+    // Look for pre-built plugin in the opencode-mem data directory
     path.join(
-      process.env.CLAUDE_CONFIG_DIR || path.join(homedir(), '.claude'),
-      'plugins', 'marketplaces', 'thedotmack',
+      process.env.OPENCODE_MEM_DATA_DIR || path.join(homedir(), '.opencode-mem'),
       'dist', 'opencode-plugin', 'index.js',
     ),
     path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist', 'opencode-plugin', 'index.js'),
@@ -281,7 +281,7 @@ export function checkOpenCodeStatus(): number {
     const content = readFileSync(agentsMdPath, 'utf-8');
     const hasContextTags = content.includes(CONTEXT_TAG_OPEN);
     console.log(`  Exists: yes`);
-    console.log(`  Has claude-mem context: ${hasContextTags ? 'yes' : 'no'}`);
+    console.log(`  Has opencode-mem context: ${hasContextTags ? 'yes' : 'no'}`);
   } else {
     console.log(`  Exists: no`);
   }
@@ -302,7 +302,7 @@ export async function installOpenCodeIntegration(): Promise<number> {
 
 *No context yet. Complete your first session and context will appear here.*
 
-Use claude-mem search tools for manual memory queries.`;
+Use opencode-mem search tools for manual memory queries.`;
 
   let contextToInject = placeholderContext;
   let contextSource = 'placeholder';
@@ -338,7 +338,7 @@ Plugin installed to: ${getInstalledPluginPath()}
 Context file: ${getOpenCodeAgentsMdPath()}
 
 Next steps:
-  1. Start claude-mem worker: npx claude-mem start
+  1. Start opencode-mem worker: npx opencode-mem start
   2. Restart OpenCode to load the plugin
   3. Memory capture is automatic from then on
 `);

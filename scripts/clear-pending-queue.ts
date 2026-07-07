@@ -9,8 +9,8 @@ interface CountRow { count: number }
 interface StatusRow { status: string; count: number }
 
 function resolveDbPath(): string {
-  const dataDir = process.env.CLAUDE_MEM_DATA_DIR || join(homedir(), '.claude-mem');
-  return join(dataDir, 'claude-mem.db');
+  const dataDir = process.env.OPENCODE_MEM_DATA_DIR || join(homedir(), '.opencode-mem');
+  return join(dataDir, 'opencode-mem.db');
 }
 
 async function prompt(question: string): Promise<string> {
@@ -54,7 +54,7 @@ Examples:
   bun scripts/clear-pending-queue.ts --all --force
 
 Notes:
-  Operates directly on ~/.claude-mem/claude-mem.db (or \$CLAUDE_MEM_DATA_DIR).
+  Operates directly on ~/.opencode-mem/opencode-mem.db (or \$OPENCODE_MEM_DATA_DIR).
   Uses SQLite WAL mode so it is safe to run while the worker is running.
 `);
     process.exit(0);

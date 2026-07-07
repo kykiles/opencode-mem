@@ -10,7 +10,7 @@ import {
 } from '../../../src/storage/postgres/index.js';
 import { quoteIdentifier } from '../../sdk/pg-isolation.js';
 
-const testDatabaseUrl = process.env.CLAUDE_MEM_TEST_POSTGRES_URL;
+const testDatabaseUrl = process.env.OPENCODE_MEM_TEST_POSTGRES_URL;
 
 describe('server beta postgres schema bootstrap', () => {
   it('acquires and releases a client when bootstrapping from a pool', async () => {
@@ -86,7 +86,7 @@ describe('server beta postgres schema bootstrap', () => {
 
 describe('server beta postgres observation storage', () => {
   if (!testDatabaseUrl) {
-    it.skip('requires explicit CLAUDE_MEM_TEST_POSTGRES_URL for Postgres integration tests', () => {});
+    it.skip('requires explicit OPENCODE_MEM_TEST_POSTGRES_URL for Postgres integration tests', () => {});
     return;
   }
 

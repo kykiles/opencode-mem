@@ -43,10 +43,10 @@ function makeSession(overrides: Record<string, unknown> = {}) {
 function mockGeminiConfig() {
   loadFromFileSpy.mockImplementation(() => ({
     ...SettingsDefaultsManager.getAllDefaults(),
-    CLAUDE_MEM_GEMINI_API_KEY: 'test-api-key',
-    CLAUDE_MEM_GEMINI_MODEL: 'gemini-2.5-flash-lite',
-    CLAUDE_MEM_GEMINI_RATE_LIMITING_ENABLED: 'false',
-    CLAUDE_MEM_DATA_DIR: '/tmp/claude-mem-test',
+    OPENCODE_MEM_GEMINI_API_KEY: 'test-api-key',
+    OPENCODE_MEM_GEMINI_MODEL: 'gemini-2.5-flash-lite',
+    OPENCODE_MEM_GEMINI_RATE_LIMITING_ENABLED: 'false',
+    OPENCODE_MEM_DATA_DIR: '/tmp/opencode-mem-test',
   }));
 }
 
@@ -99,17 +99,17 @@ describe('GeminiProvider', () => {
 
     loadFromFileSpy = spyOn(SettingsDefaultsManager, 'loadFromFile').mockImplementation(() => ({
       ...SettingsDefaultsManager.getAllDefaults(),
-      CLAUDE_MEM_GEMINI_API_KEY: 'test-api-key',
-      CLAUDE_MEM_GEMINI_MODEL: 'gemini-2.5-flash-lite',
-      CLAUDE_MEM_GEMINI_RATE_LIMITING_ENABLED: rateLimitingEnabled,
-      CLAUDE_MEM_DATA_DIR: '/tmp/claude-mem-test',
+      OPENCODE_MEM_GEMINI_API_KEY: 'test-api-key',
+      OPENCODE_MEM_GEMINI_MODEL: 'gemini-2.5-flash-lite',
+      OPENCODE_MEM_GEMINI_RATE_LIMITING_ENABLED: rateLimitingEnabled,
+      OPENCODE_MEM_DATA_DIR: '/tmp/opencode-mem-test',
     }));
 
     getSpy = spyOn(SettingsDefaultsManager, 'get').mockImplementation((key: string) => {
-      if (key === 'CLAUDE_MEM_GEMINI_API_KEY') return 'test-api-key';
-      if (key === 'CLAUDE_MEM_GEMINI_MODEL') return 'gemini-2.5-flash-lite';
-      if (key === 'CLAUDE_MEM_GEMINI_RATE_LIMITING_ENABLED') return rateLimitingEnabled;
-      if (key === 'CLAUDE_MEM_DATA_DIR') return '/tmp/claude-mem-test';
+      if (key === 'OPENCODE_MEM_GEMINI_API_KEY') return 'test-api-key';
+      if (key === 'OPENCODE_MEM_GEMINI_MODEL') return 'gemini-2.5-flash-lite';
+      if (key === 'OPENCODE_MEM_GEMINI_RATE_LIMITING_ENABLED') return rateLimitingEnabled;
+      if (key === 'OPENCODE_MEM_DATA_DIR') return '/tmp/opencode-mem-test';
       return SettingsDefaultsManager.getAllDefaults()[key as keyof ReturnType<typeof SettingsDefaultsManager.getAllDefaults>] ?? '';
     });
 

@@ -3,11 +3,11 @@
   "name": "Claude-Mem",
   "description": "Persistent memory compression system that preserves context across Claude Code sessions",
   "theme": "mint",
-  "favicon": "/claude-mem-logomark.webp",
+  "favicon": "/opencode-mem-logomark.webp",
   "logo": {
-    "light": "/claude-mem-logo-for-light-mode.webp",
-    "dark": "/claude-mem-logo-for-dark-mode.webp",
-    "href": "https://github.com/thedotmack/claude-mem"
+    "light": "/opencode-mem-logo-for-light-mode.webp",
+    "dark": "/opencode-mem-logo-for-dark-mode.webp",
+    "href": "https://github.com/kykiles/opencode-mem"
   },
   "colors": {
     "primary": "#3B82F6",
@@ -18,13 +18,13 @@
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/thedotmack/claude-mem"
+        "href": "https://github.com/kykiles/opencode-mem"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Install",
-      "href": "https://github.com/thedotmack/claude-mem#quick-start"
+      "href": "https://github.com/kykiles/opencode-mem#quick-start"
     }
   },
   "navigation": {
@@ -114,7 +114,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/thedotmack/claude-mem"
+      "github": "https://github.com/kykiles/opencode-mem"
     },
     "links": [
       {
@@ -122,11 +122,11 @@
         "items": [
           {
             "label": "Documentation",
-            "href": "https://github.com/thedotmack/claude-mem"
+            "href": "https://github.com/kykiles/opencode-mem"
           },
           {
             "label": "Issues",
-            "href": "https://github.com/thedotmack/claude-mem/issues"
+            "href": "https://github.com/kykiles/opencode-mem/issues"
           }
         ]
       },
@@ -135,7 +135,7 @@
         "items": [
           {
             "label": "License (Apache-2.0)",
-            "href": "https://github.com/thedotmack/claude-mem/blob/main/LICENSE"
+            "href": "https://github.com/kykiles/opencode-mem/blob/main/LICENSE"
           }
         ]
       }

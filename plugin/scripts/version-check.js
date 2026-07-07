@@ -144,7 +144,7 @@ if (!ROOT) process.exit(0);
 ensurePluginDependencies(ROOT);
 
 function emitUpgradeHint(message) {
-  if (process.env.CLAUDE_MEM_CODEX_HOOK === '1') {
+  if (process.env.OPENCODE_MEM_CODEX_HOOK === '1') {
     console.log(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'SessionStart',
@@ -178,16 +178,16 @@ try {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'));
   const markerPath = join(ROOT, '.install-version');
   if (!existsSync(markerPath)) {
-    emitUpgradeHint('claude-mem: runtime not yet set up - run: npx claude-mem@latest install');
+    emitUpgradeHint('opencode-mem: runtime not yet set up - run: npx opencode-mem@latest install');
     process.exit(0);
   }
   const markerVersion = readInstallMarkerVersion(markerPath);
   if (!markerVersion) {
-    emitUpgradeHint('claude-mem: install marker unreadable - run: npx claude-mem@latest install');
+    emitUpgradeHint('opencode-mem: install marker unreadable - run: npx opencode-mem@latest install');
   } else if (markerVersion !== pkg.version) {
-    emitUpgradeHint(`claude-mem: upgraded to v${pkg.version} - run: npx claude-mem@latest install`);
+    emitUpgradeHint(`opencode-mem: upgraded to v${pkg.version} - run: npx opencode-mem@latest install`);
   }
 } catch {
-  emitUpgradeHint('claude-mem: install marker unreadable - run: npx claude-mem@latest install');
+  emitUpgradeHint('opencode-mem: install marker unreadable - run: npx opencode-mem@latest install');
 }
 process.exit(0);

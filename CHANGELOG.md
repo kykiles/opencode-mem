@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Fixes
 
-- **Codex SessionStart hook no longer fails at startup.** When a hook errored before its handler ran (missing `session_id`, invalid `cwd`, or a missing transcript path), claude-mem fell back to a bare `{"continue":true}` regardless of which hook fired. Codex's strict `SessionStart` validator rejects that shape as "invalid session start JSON output," breaking context injection at Codex startup. The fallback now emits a valid `hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: "" }` for the `context` hook, matching what Codex expects.
+- **Codex SessionStart hook no longer fails at startup.** When a hook errored before its handler ran (missing `session_id`, invalid `cwd`, or a missing transcript path), opencode-mem fell back to a bare `{"continue":true}` regardless of which hook fired. Codex's strict `SessionStart` validator rejects that shape as "invalid session start JSON output," breaking context injection at Codex startup. The fallback now emits a valid `hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: "" }` for the `context` hook, matching what Codex expects.
 - Fixed a related gap where the Codex adapter silently dropped an explicit empty-string `additionalContext` from its output instead of preserving it, which could leave the SessionStart payload incomplete.
 
 Closes #2947, #2972. Supersedes #2953 and #2948.
@@ -17,14 +17,14 @@ Closes #2947, #2972. Supersedes #2953 and #2948.
 
 ## Antigravity CLI support, Gemini CLI removed
 
-Google deprecated Gemini CLI's free/individual tier (cutoff June 18, 2026) in favor of **Antigravity CLI**, the official successor announced May 19, 2026. This release migrates claude-mem accordingly.
+Google deprecated Gemini CLI's free/individual tier (cutoff June 18, 2026) in favor of **Antigravity CLI**, the official successor announced May 19, 2026. This release migrates opencode-mem accordingly.
 
 ### Removed
-- Gemini CLI host integration (adapter, installer, IDE-detection entry, hooks, dedicated docs/tests). The separate, still-supported Gemini LLM/observation provider (`CLAUDE_MEM_GEMINI_API_KEY`, `GeminiProvider`) is unaffected.
+- Gemini CLI host integration (adapter, installer, IDE-detection entry, hooks, dedicated docs/tests). The separate, still-supported Gemini LLM/observation provider (`OPENCODE_MEM_GEMINI_API_KEY`, `GeminiProvider`) is unaffected.
 
 ### Added
 - Full Antigravity CLI (`agy`) support at feature parity: hooks (7-event map sharing Gemini CLI's proven `~/.gemini/settings.json`), dual MCP server registration, and `GEMINI.md`/rules-file context injection.
-- `npx claude-mem antigravity-cli install|status|uninstall` subcommand support.
+- `npx opencode-mem antigravity-cli install|status|uninstall` subcommand support.
 
 Verified end-to-end against a real live Antigravity CLI install, including hook firing, MCP tool registration, and context injection.
 
@@ -36,7 +36,7 @@ Verified end-to-end against a real live Antigravity CLI install, including hook 
 - chore: repo-wide over-engineering cleanup — ponytail audit wave 1 & 2 (#3120)
   - Removed dead code, unused dependencies, and unused cmem-sdk client surface
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v13.9.2...v13.9.3
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v13.9.2...v13.9.3
 
 ## [13.9.2] - 2026-07-01
 
@@ -51,7 +51,7 @@ The full conversation history is now sent to the provider, which owns its own co
 ### Removed
 - `OpenAICompatibleProvider.truncateHistory()` and the `requireNonEmptyToTruncate` flag
 - `truncateHistoryForOpenRouter` / `truncateHistoryForGemini` wrappers and their message/token constants
-- `CLAUDE_MEM_{GEMINI,OPENROUTER}_MAX_CONTEXT_MESSAGES` / `_MAX_TOKENS` settings, defaults, and validation
+- `OPENCODE_MEM_{GEMINI,OPENROUTER}_MAX_CONTEXT_MESSAGES` / `_MAX_TOKENS` settings, defaults, and validation
 - Related tests, docs, and installer references
 
 Merged in #3096. Verified: `tsc` clean, 2248 tests passing, build-and-sync clean.
@@ -75,14 +75,14 @@ Patch release shipping the platform-source recovery work merged in #3088, plus d
 - Stabilize session init after the server rename
 - Restore Chroma MCP mock to prevent cross-suite leakage
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v13.9.0...v13.9.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v13.9.0...v13.9.1
 
 ## [13.9.0] - 2026-06-29
 
 ## Highlights
 
-### 🚀 New: \`claude-mem/sdk\` (cmem-sdk)
-A fully in-process capture → compress → semantic-search pipeline with **no HTTP worker and no Redis**. Import \`createCmemClient\` from \`claude-mem/sdk\`, point it at Postgres + a running \`uvx chroma-mcp\` + an LLM provider, and call \`capture\`/\`generate\`/\`search\`/\`context\`/session methods directly.
+### 🚀 New: \`opencode-mem/sdk\` (cmem-sdk)
+A fully in-process capture → compress → semantic-search pipeline with **no HTTP worker and no Redis**. Import \`createCmemClient\` from \`opencode-mem/sdk\`, point it at Postgres + a running \`uvx chroma-mcp\` + an LLM provider, and call \`capture\`/\`generate\`/\`search\`/\`context\`/session methods directly.
 
 - New reference docs: **CMEM-SDK Reference** under *SDK & Embedding*.
 - Bundle keeps \`pg\`, \`zod\`, \`@modelcontextprotocol/sdk\`, and \`@anthropic-ai/sdk\` external so consumers resolve them against the installed package.
@@ -113,14 +113,14 @@ Carries generation-side observation volume and type mix on the `observer_turn_ro
 ### Merge notes
 - Merged latest `main` (Ponytail audit, v13.7.1), which removed fabrication tracking; the now-stale `fabrication_count` / `fabricated_count` references were dropped from code and docs accordingly.
 
-Full changes: https://github.com/thedotmack/claude-mem/pull/3017
+Full changes: https://github.com/kykiles/opencode-mem/pull/3017
 
 ## [13.7.1] - 2026-06-21
 
 Cleanup + reliability release. No new user-facing features.
 
 ## Fixed
-- **Node version floor corrected.** `engines.node` now requires `>=20.12.0` to match the stdlib `util.parseEnv` adopted during the audit. It previously advertised `>=20.0.0`, where `util.parseEnv` is `undefined` — causing silent credential-load failures (and a hard throw in `saveClaudeMemEnv`) on Node 20.0–20.11. Fixed in both the npm package and the generated plugin manifest. (#3021)
+- **Node version floor corrected.** `engines.node` now requires `>=20.12.0` to match the stdlib `util.parseEnv` adopted during the audit. It previously advertised `>=20.0.0`, where `util.parseEnv` is `undefined` — causing silent credential-load failures (and a hard throw in `saveOpenCodeMemEnv`) on Node 20.0–20.11. Fixed in both the npm package and the generated plugin manifest. (#3021)
 
 ## Changed (internal)
 - **Ponytail audit — −10.4k lines** of dead/redundant code removed across 8 slices (worker HTTP routes, agents, session/rate-limit, search pipeline, providers, storage/shared).
@@ -129,23 +129,23 @@ Cleanup + reliability release. No new user-facing features.
 - **Worker-restart hardening** via a single-spawn gate.
 - **Deterministic dependency closure** for the bundled plugin runtime.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v13.7.0...v13.7.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v13.7.0...v13.7.1
 
 ## [13.7.0] - 2026-06-20
 
 ## PostHog telemetry overhaul
 
-A ground-up rebuild of claude-mem's telemetry — per-session rollups, unified instrumentation, and real (redacted) error tracking. Grounded in live PostHog data: the raw-event volume was confirmed to be **legacy-fleet decay** (raw `session_compressed` fell ~75% in two days as installs updated), so this is the proper rebuild, not a hotfix.
+A ground-up rebuild of opencode-mem's telemetry — per-session rollups, unified instrumentation, and real (redacted) error tracking. Grounded in live PostHog data: the raw-event volume was confirmed to be **legacy-fleet decay** (raw `session_compressed` fell ~75% in two days as installs updated), so this is the proper rebuild, not a hotfix.
 
 ### What's new
 - **Per-session rollups** — `observer_turn_rollup` is now emitted **once per session at session end** (`rollup_reason` = session_end | worker_shutdown | safety_flush, plus `window_seq`) instead of per 5-minute wall-clock window. Memory-bounded with a safety sweep; drains correctly on worker shutdown.
 - **Unified instrumentation** — a single `instrument()` path fans out to the local logger (full fidelity) and telemetry (scrubbed/rolled-up). The logger stays telemetry-free.
 - **Redacted error tracking** — real error messages + trimmed stacks now reach PostHog as `$exception` events, consent-gated, profile-less, and fingerprint rate-limited. An allow-then-redact scrubber strips home dirs, absolute paths, DB connection-string credentials, URL userinfo, emails, API tokens (sk-/phc-/ghp-/AWS AKIA/JWT), hex, and IPv4; messages cap at 500 chars, stacks at ~2KB. Autocapture is fully redacted (on-disk source context is stripped, never sent).
-- **New kill-switch** — `CLAUDE_MEM_TELEMETRY_ERRORS=0` disables error capture independently of analytics.
+- **New kill-switch** — `OPENCODE_MEM_TELEMETRY_ERRORS=0` disables error capture independently of analytics.
 - **Docs** — `telemetry.mdx` rewritten to document the new model, the error-tracking opt-in + one-way-door note, and the opt-out switches.
 
 ### Privacy
-This release begins collecting redacted error messages/stacks (a deliberate, consent-gated shift from whitelist-only telemetry). Raw paths, prompts, project names, source code, and model output are still never collected. Opt out of all telemetry with `CLAUDE_MEM_TELEMETRY=0` / `DO_NOT_TRACK=1`, or errors-only with `CLAUDE_MEM_TELEMETRY_ERRORS=0`.
+This release begins collecting redacted error messages/stacks (a deliberate, consent-gated shift from whitelist-only telemetry). Raw paths, prompts, project names, source code, and model output are still never collected. Opt out of all telemetry with `OPENCODE_MEM_TELEMETRY=0` / `DO_NOT_TRACK=1`, or errors-only with `OPENCODE_MEM_TELEMETRY_ERRORS=0`.
 
 ## [13.6.2] - 2026-06-17
 
@@ -158,7 +158,7 @@ This release begins collecting redacted error messages/stacks (a deliberate, con
 ### CI
 - **Windows build pinned to `windows-2022`** — the `windows-latest` image moved to `windows-2025` (Visual Studio 18), which the bundled `node-gyp@11.5.0` can't detect, breaking native `tree-sitter` rebuilds. Pinned to `windows-2022` (VS2022) until node-gyp gains VS18 support.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v13.6.1...v13.6.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v13.6.1...v13.6.2
 
 ## [13.6.1] - 2026-06-15
 
@@ -166,13 +166,13 @@ Patch release.
 
 - feat(telemetry): backfill historical token-savings economics (#2934) — backfills inferred generation-cost economics into anonymized daily telemetry rollups, with scrub coverage and tests.
 
-Full changelog: https://github.com/thedotmack/claude-mem/blob/main/CHANGELOG.md
+Full changelog: https://github.com/kykiles/opencode-mem/blob/main/CHANGELOG.md
 
 ## [13.6.0] - 2026-06-13
 
 ## 📊 Historical Telemetry Backfill
 
-claude-mem's growth metrics now extend back before telemetry existed. On the first worker start after this upgrade, each install performs a **one-time backfill** of anonymized daily activity rollups into PostHog via historical-migration ingestion — so installs-over-time, reconstructed WAU/MAU, and cohort retention reflect real usage history instead of starting at the telemetry ship date.
+opencode-mem's growth metrics now extend back before telemetry existed. On the first worker start after this upgrade, each install performs a **one-time backfill** of anonymized daily activity rollups into PostHog via historical-migration ingestion — so installs-over-time, reconstructed WAU/MAU, and cohort retention reflect real usage history instead of starting at the telemetry ship date.
 
 ### What gets sent
 **Anonymous counts only — never titles, prompts, file contents, or project names:**
@@ -180,12 +180,12 @@ claude-mem's growth metrics now extend back before telemetry existed. On the fir
 - One `install_inferred` event carrying the install's first active date, drawn from trustworthy session timestamps
 
 ### Privacy & safety
-- Honors the exact same consent gates as live telemetry: `DO_NOT_TRACK`, `CLAUDE_MEM_TELEMETRY=0`, and `telemetry.json` opt-out. Opting out before your first post-upgrade worker start prevents the backfill entirely; a later opt-in still backfills.
+- Honors the exact same consent gates as live telemetry: `DO_NOT_TRACK`, `OPENCODE_MEM_TELEMETRY=0`, and `telemetry.json` opt-out. Opting out before your first post-upgrade worker start prevents the backfill entirely; a later opt-in still backfills.
 - Runs **once per install**, latched by a completion marker written only after confirmed delivery — failed sends retry on the next worker start, and deterministic event uuids make retries duplicate-safe.
-- `CLAUDE_MEM_TELEMETRY_DEBUG=1` dry-runs the full payload to stderr without sending anything.
+- `OPENCODE_MEM_TELEMETRY_DEBUG=1` dry-runs the full payload to stderr without sending anything.
 - Legacy epoch normalization and corrupt-row guards keep bad timestamps out of the historical record; partial days are never shipped.
 
-Full disclosure documented at [docs.claude-mem.ai/telemetry](https://docs.claude-mem.ai/telemetry).
+Full disclosure documented at [docs.opencode-mem.ai/telemetry](https://docs.opencode-mem.ai/telemetry).
 
 **PR**: #2912
 
@@ -197,7 +197,7 @@ Full disclosure documented at [docs.claude-mem.ai/telemetry](https://docs.claude
 
 If an abandoned npm-global `claude` binary sat earlier in PATH than your current install, every Observer spawn died instantly at flag parsing — worker healthy, zero observations, nothing in the logs. The resolver now:
 
-- **Probes every candidate for capability**, not just existence: each CLI is tested with `--permission-mode dontAsk --version`, the exact flags claude-mem passes on every agent spawn. Binaries that reject them (older than the 2.1.x line) are skipped up front with a clear warning.
+- **Probes every candidate for capability**, not just existence: each CLI is tested with `--permission-mode dontAsk --version`, the exact flags opencode-mem passes on every agent spawn. Binaries that reject them (older than the 2.1.x line) are skipped up front with a clear warning.
 - **Prefers the newest capable version** — PATH order only breaks ties, so a stale binary can't shadow a current one.
 - **Fails loud, never silent**: an explicit `CLAUDE_CODE_PATH` that's too old throws with the version and the remedy; if every CLI found is too old, the error names each path and version.
 - **Self-heals on CLI updates**: successful resolutions are cached 15 minutes, failures are never cached — updating your CLI is picked up on the next observation without a worker restart.
@@ -221,7 +221,7 @@ This release rearchitects worker lifecycle management to eliminate the restart r
 - **PID file demoted to diagnostics** — liveness truth is the port + `/api/health`. Every PID-file deletion is owner-guarded, so a dying worker can never clobber its successor's file; `status` reports pid/version/uptime/workerPath from health alone and survives PID-file deletion.
 - **First-run fix** — settings bootstrap notices now go to stderr, never stdout: the very first hook invocation on a fresh install no longer emits corrupted JSON to the hook framework.
 - **Build chain hardened** — the dev sync-script's installed-version cache mirror (which wrote new code into old version dirs, manufacturing permanent version disagreement) and its duplicate HTTP restart trigger are deleted; `build-and-sync` restarts through one verified CLI path.
-- **Test hygiene** — the test suite can no longer touch the real `~/.claude-mem` (a preload tripwire isolates every run), ending sentinel-PID and corrupt-JSON pollution of production state.
+- **Test hygiene** — the test suite can no longer touch the real `~/.opencode-mem` (a preload tripwire isolates every run), ending sentinel-PID and corrupt-JSON pollution of production state.
 
 ### Validation
 
@@ -231,7 +231,7 @@ Triple-restart soak (3× consecutive verified restarts, zero duplicate/EADDRINUS
 
 ## Telemetry Reliability Signals (Plan 14)
 
-claude-mem instrumented success well — failure was invisible. This release adds the five highest-value missing reliability signals (#2874). Everything is closed-enum/count-only, whitelisted in the scrubber, and disclosed in both the [public docs](https://docs.claude-mem.ai/telemetry) and `claude-mem telemetry`.
+opencode-mem instrumented success well — failure was invisible. This release adds the five highest-value missing reliability signals (#2874). Everything is closed-enum/count-only, whitelisted in the scrubber, and disclosed in both the [public docs](https://docs.opencode-mem.ai/telemetry) and `opencode-mem telemetry`.
 
 ### Search retrieval quality (`search_performed`)
 - `result_count`, `search_strategy` (`chroma|fts|filter_only`), `chroma_available`, `fallback_reason` (`none|chroma_connection|chroma_error|chroma_not_initialized`)
@@ -258,12 +258,12 @@ claude-mem instrumented success well — failure was invisible. This release add
 
 ## Fixed
 
-- **Telemetry geolocation: closed the ~98.5% "unknown location" gap.** The posthog-node SDK assumes server deployments and stamps `$geoip_disable: true` on every event by default. claude-mem's worker runs on the user's own machine, so this needlessly suppressed PostHog's ingest-side GeoIP on all worker events (`worker_started`, `session_compressed`, `context_injected`, …). The client now passes `disableGeoip: false`, letting PostHog derive coarse location (country / region / city) at ingestion — from the request IP, which is then discarded. CLI events (`install_*`) were already unaffected.
+- **Telemetry geolocation: closed the ~98.5% "unknown location" gap.** The posthog-node SDK assumes server deployments and stamps `$geoip_disable: true` on every event by default. opencode-mem's worker runs on the user's own machine, so this needlessly suppressed PostHog's ingest-side GeoIP on all worker events (`worker_started`, `session_compressed`, `context_injected`, …). The client now passes `disableGeoip: false`, letting PostHog derive coarse location (country / region / city) at ingestion — from the request IP, which is then discarded. CLI events (`install_*`) were already unaffected.
 
 ## Privacy
 
 - No change to the IP promise: raw IP addresses are still **never attached to events by the client and never stored** — the sender IP is used transiently at ingest for the coarse-location lookup, then discarded.
-- The telemetry docs (https://docs.claude-mem.ai/telemetry) and the `npx claude-mem telemetry enable` consent screen now disclose the ingest-derived coarse location.
+- The telemetry docs (https://docs.opencode-mem.ai/telemetry) and the `npx opencode-mem telemetry enable` consent screen now disclose the ingest-derived coarse location.
 
 ## Tests
 
@@ -273,7 +273,7 @@ claude-mem instrumented success well — failure was invisible. This release add
 
 ## Telemetry: real data edition
 
-Every analytics number claude-mem reports about itself is now real, provider-reported data — plus a new daily install-state snapshot so we can see the actual state of the installed base.
+Every analytics number opencode-mem reports about itself is now real, provider-reported data — plus a new daily install-state snapshot so we can see the actual state of the installed base.
 
 ### Fixed: the four session_compressed data-quality bugs
 
@@ -291,13 +291,13 @@ Every analytics number claude-mem reports about itself is now real, provider-rep
 - The `ide` person property on `worker_started` never populated — the lookup queried a legacy table and silently threw on every start since it shipped.
 - Epoch math now normalizes legacy seconds-unit rows (a few hundred per install) that would have reported install ages of ~20,000 days.
 
-All new properties are whitelisted in the scrubber, documented at https://docs.claude-mem.ai/telemetry, and shown in the `npx claude-mem telemetry` consent screen. Telemetry remains anonymous and opt-out (`npx claude-mem telemetry disable`).
+All new properties are whitelisted in the scrubber, documented at https://docs.opencode-mem.ai/telemetry, and shown in the `npx opencode-mem telemetry` consent screen. Telemetry remains anonymous and opt-out (`npx opencode-mem telemetry disable`).
 
 ## [13.5.2] - 2026-06-10
 
 ## What's New in 13.5.2
 
-Platform and toolchain telemetry to diagnose the install → live-worker activation dropoff (anonymous, opt-out — see `npx claude-mem telemetry`):
+Platform and toolchain telemetry to diagnose the install → live-worker activation dropoff (anonymous, opt-out — see `npx opencode-mem telemetry`):
 
 - Every event now carries `os_version` (kernel release — distinguishes Windows 10 vs 11, macOS releases), `is_wsl`, and `node_version` alongside the existing `os`/`arch`/`runtime` fields.
 - `install_completed` now reports `interactive` (TTY vs scripted), `install_method` (npm / bun / pnpm / yarn), and detected `bun_version`, `uv_version`, and `claude_code_version`.
@@ -309,7 +309,7 @@ Platform and toolchain telemetry to diagnose the install → live-worker activat
 
 ## What's New in 13.5.1
 
-Deep telemetry instrumentation (anonymous, opt-out — see `npx claude-mem telemetry`):
+Deep telemetry instrumentation (anonymous, opt-out — see `npx opencode-mem telemetry`):
 
 - **`context_injected`** now reports token economics and observation-type breakdowns via the new `generateContextWithStats()` context builder, so we can measure real context savings.
 - **`session_compressed`** enriched with provider, model, real per-call token counts (Claude, Gemini, and OpenRouter at parity), latency, and observation-type breakdown.
@@ -321,7 +321,7 @@ Deep telemetry instrumentation (anonymous, opt-out — see `npx claude-mem telem
 
 ## Anonymous usage analytics (PostHog) — and the v13.5.0 release
 
-claude-mem now ships anonymous, privacy-hardened usage analytics. This is the first release with any telemetry, and it follows the standard dev-tool model (Homebrew, Next.js, Astro): **on by default, one command to opt out, and incapable of carrying your content by construction.**
+opencode-mem now ships anonymous, privacy-hardened usage analytics. This is the first release with any telemetry, and it follows the standard dev-tool model (Homebrew, Next.js, Astro): **on by default, one command to opt out, and incapable of carrying your content by construction.**
 
 ### What's collected
 
@@ -333,36 +333,36 @@ Eight events (`install_completed`, `install_failed`, `uninstall_completed`, `wor
 
 Any one of these turns it off:
 
-- `npx claude-mem telemetry disable`
+- `npx opencode-mem telemetry disable`
 - `DO_NOT_TRACK=1` (the universal standard — overrides everything)
-- `CLAUDE_MEM_TELEMETRY=0`
+- `OPENCODE_MEM_TELEMETRY=0`
 
-`npx claude-mem telemetry status` shows the current state and which setting decided it. The installer asks once at the end of `npx claude-mem install`, and your answer is never re-asked.
+`npx opencode-mem telemetry status` shows the current state and which setting decided it. The installer asks once at the end of `npx opencode-mem install`, and your answer is never re-asked.
 
-Full documentation of every field and event: https://docs.claude-mem.ai/telemetry
+Full documentation of every field and event: https://docs.opencode-mem.ai/telemetry
 
 ### Also in this release
 
 - Install flow: live progress for dependency steps and a consent prompt at the end of install
-- `npx claude-mem telemetry [status|enable|disable]` CLI command
+- `npx opencode-mem telemetry [status|enable|disable]` CLI command
 - Worker shutdown now flushes telemetry with a hard 3s bound — never delays stop
 
 ## [13.4.2] - 2026-06-09
 
 ## What's new
 
-**Installer: \"work email\" opt-in** — the CMEM Online signup prompt in `npx claude-mem install` now asks for your *work* email (placeholder `you@company.com`). This surfaces which orgs are adopting claude-mem.
+**Installer: \"work email\" opt-in** — the CMEM Online signup prompt in `npx opencode-mem install` now asks for your *work* email (placeholder `you@company.com`). This surfaces which orgs are adopting opencode-mem.
 
 ## [13.4.1] - 2026-06-08
 
 ## What's new
 
-### 🟣 CMEM Online email opt-in during `npx claude-mem install`
+### 🟣 CMEM Online email opt-in during `npx opencode-mem install`
 An optional, interactive email opt-in now appears at the start of the installer. Press Enter to skip — it never blocks or fails the install.
 
 - Collects an email + an optional "what are you working on / how can we help your team" note.
-- POSTs to the live `https://cmem.ai/api/waitlist` endpoint (handles persistence, dedup, and the confirmation email server-side). Overridable via `CLAUDE_MEM_SIGNUP_URL`; tagged `source: npx-installer`.
-- Skipped automatically when non-interactive, under CI, or with `CLAUDE_MEM_ONLINE_OPTIN=false`.
+- POSTs to the live `https://cmem.ai/api/waitlist` endpoint (handles persistence, dedup, and the confirmation email server-side). Overridable via `OPENCODE_MEM_SIGNUP_URL`; tagged `source: npx-installer`.
+- Skipped automatically when non-interactive, under CI, or with `OPENCODE_MEM_ONLINE_OPTIN=false`.
 - Signup is persisted locally so returning users aren't re-prompted; a failed send is retried silently on the next install.
 - No secrets ship in the npx package — the endpoint is unauthenticated and the Resend key stays server-side. The waitlist endpoint was extended to capture the optional note.
 
@@ -375,7 +375,7 @@ An optional, interactive email opt-in now appears at the start of the installer.
 Clears a large defect backlog (plans 01–11 plus standalone fixes) and adds provider configurability. Test suite moved 46 → 0 failing and typecheck 24 → 0 errors over the branch.
 
 ### Features
-- **Configurable OpenAI-compatible base URL** for the OpenRouter provider (`CLAUDE_MEM_OPENROUTER_BASE_URL`) — point claude-mem at DeepSeek, LM Studio, or any custom OpenAI-compatible endpoint.
+- **Configurable OpenAI-compatible base URL** for the OpenRouter provider (`OPENCODE_MEM_OPENROUTER_BASE_URL`) — point opencode-mem at DeepSeek, LM Studio, or any custom OpenAI-compatible endpoint.
 
 ### Fixes (highlights)
 - **Spawn contract (plan-02):** canonical `${CLAUDE_PLUGIN_ROOT}` resolution + Windows spawn fixes (codex.cmd, chroma-mcp cmd.exe quoting).
@@ -389,7 +389,7 @@ Clears a large defect backlog (plans 01–11 plus standalone fixes) and adds pro
 - New CI workflow (typecheck · build · test · bundle-size + docker pg+valkey e2e) made green; removed npm-lockfile dependency to match the repo's no-committed-lockfile convention.
 - Fixed `mock.module` logger leakage across test files and guarded sqlite3 `.recover` capability so CI runs cleanly.
 
-Full diff: https://github.com/thedotmack/claude-mem/pull/2701
+Full diff: https://github.com/kykiles/opencode-mem/pull/2701
 
 ## [13.3.0] - 2026-05-21
 
@@ -398,15 +398,15 @@ Full diff: https://github.com/thedotmack/claude-mem/pull/2701
 ### New skills
 
 - **design-is** (#2483) — audits a design against Dieter Rams' ten "Good design is..." principles. Produces per-principle 0–3 scores with file:line evidence and a NEW / REFINE / REDESIGN verdict, then hands off a ready-to-run `/make-plan` prompt.
-- **weekly-digests** (#2399) — produces a chapter-per-ISO-week serial digest of a project's full claude-mem timeline. Sequential subagent pipeline keeps the narrative coherent across 30+ chapters.
+- **weekly-digests** (#2399) — produces a chapter-per-ISO-week serial digest of a project's full opencode-mem timeline. Sequential subagent pipeline keeps the narrative coherent across 30+ chapters.
 - **oh-my-issues** (#2409) — root-cause issue clustering. Codifies the consolidation method that turned ~100 open issues into 6 plan-masters during the v13.0.1 cycle. Three modes: cluster pass, triage, bundle.
 
 ### Fixes
 
 - **fix(mcp): drop duplicate root `.mcp.json`** (#2411) — Claude Code's `/doctor` was warning "MCP server mcp-search skipped — same command/URL as already-configured mcp-search" for every plugin user. The root copy was vestigial; the plugin's namespaced registration now wins.
-- **fix: stop Codex transcript replay after hooks migration** (#2365) — disables the default `~/.codex/sessions/**/*.jsonl` watch (native Codex hooks are now authoritative). Repairs `~/.codex/config.toml` to set `[features] hooks = true` and `[plugins."claude-mem@claude-mem-local"] enabled = true` directly. Fixes transcript replay where files discovered after startup ignored `startAtEnd` and re-injected history.
+- **fix: stop Codex transcript replay after hooks migration** (#2365) — disables the default `~/.codex/sessions/**/*.jsonl` watch (native Codex hooks are now authoritative). Repairs `~/.codex/config.toml` to set `[features] hooks = true` and `[plugins."opencode-mem@opencode-mem-local"] enabled = true` directly. Fixes transcript replay where files discovered after startup ignored `startAtEnd` and re-injected history.
 
-Opt back into legacy Codex transcript ingestion with `CLAUDE_MEM_CODEX_TRANSCRIPT_INGESTION=true` if you depend on the JSONL watcher.
+Opt back into legacy Codex transcript ingestion with `OPENCODE_MEM_CODEX_TRANSCRIPT_INGESTION=true` if you depend on the JSONL watcher.
 
 ## [13.2.0] - 2026-05-12
 
@@ -459,7 +459,7 @@ Full PR thread: #2383.
 
 ### Environment isolation
 - **#2357** — block `ANTHROPIC_BASE_URL` leak; use a three-branch OAuth-skip predicate
-- Add `CLAUDE_MEM_ENV_FILE` lazy resolver so tests (and multi-profile users) can redirect the env-file path without module-load-order constraints
+- Add `OPENCODE_MEM_ENV_FILE` lazy resolver so tests (and multi-profile users) can redirect the env-file path without module-load-order constraints
 
 ### Worker lifecycle
 - Classify Claude SDK HTTP 400 as **unrecoverable** so the worker stops retrying a doomed request
@@ -473,24 +473,24 @@ Full PR thread: #2383.
 - Polyfill `import.meta.url` to `pathToFileURL(__filename)` in the CJS worker bundle so ESM-style code resolves correctly (CodeRabbit-driven follow-up)
 
 ### Tests / review
-- `tests/env-isolation.test.ts` no longer mutates the real `~/.claude-mem/.env`; OAuth spy wrapped in try/finally to avoid leaks across runs
+- `tests/env-isolation.test.ts` no longer mutates the real `~/.opencode-mem/.env`; OAuth spy wrapped in try/finally to avoid leaks across runs
 - 3 new chroma-mcp regression tests for #2313 (singleton enforcement)
 
 ### Misc
 - Daily dependency bump per CLAUDE.md maintenance policy
 
-Full diff: https://github.com/thedotmack/claude-mem/pull/2394
+Full diff: https://github.com/kykiles/opencode-mem/pull/2394
 
 ## [13.0.0] - 2026-05-08
 
 ## Highlights
 
-This is the **claude-mem 13** major release, landing the Server Beta runtime and the project's relicense.
+This is the **opencode-mem 13** major release, landing the Server Beta runtime and the project's relicense.
 
 ### Server Beta runtime (opt-in)
-- Independent server-beta service with its own lifecycle (`claude-mem server start/status/stop`)
+- Independent server-beta service with its own lifecycle (`opencode-mem server start/status/stop`)
 - Postgres-backed observation storage
-- BullMQ + Redis observation queue engine (gated behind `CLAUDE_MEM_QUEUE_ENGINE=bullmq`, fail-fast)
+- BullMQ + Redis observation queue engine (gated behind `OPENCODE_MEM_QUEUE_ENGINE=bullmq`, fail-fast)
 - New `/v1` REST API surface (events, sessions, memories, search, context, audit, jobs)
 - API-key auth + Better-Auth proxy
 - Outbox pattern for transactional event-to-job pipelines
@@ -515,14 +515,14 @@ This is the **claude-mem 13** major release, landing the Server Beta runtime and
 - Node ≥ 20, Bun ≥ 1.0
 - Server Beta requires Postgres + Redis (only when enabled)
 
-Full diff: https://github.com/thedotmack/claude-mem/compare/v12.7.5...v13.0.0
+Full diff: https://github.com/kykiles/opencode-mem/compare/v12.7.5...v13.0.0
 
 ## [12.7.5] - 2026-05-07
 
 Patch release for npx installs that hit an existing Codex marketplace registration.
 
 Fixes:
-- If Codex already has claude-mem-local registered from a different source, the installer now removes that stale registration and re-adds the local npx marketplace instead of failing.
+- If Codex already has opencode-mem-local registered from a different source, the installer now removes that stale registration and re-adds the local npx marketplace instead of failing.
 - Keeps Codex plugin_hooks enablement and legacy AGENTS cleanup after the marketplace registration succeeds.
 - Updates the release workflow instructions to use npm run build-and-sync instead of plain npm run build so the local marketplace and worker are synced during releases.
 
@@ -530,14 +530,14 @@ Validation:
 - npm run build-and-sync
 - bun test tests/install-non-tty.test.ts tests/infrastructure/plugin-distribution.test.ts tests/servers/mcp-tool-schemas.test.ts tests/setup-runtime.test.ts tests/hook-command.test.ts
 - Docker smoke with codex-cli 0.128.0 reproducing the remote-to-local marketplace source conflict and verifying install completion.
-- npx --yes claude-mem@12.7.5 --version
+- npx --yes opencode-mem@12.7.5 --version
 
 ## [12.7.4] - 2026-05-07
 
 Patch release for the Codex mem-search marketplace fix.
 
 Highlights:
-- Restores Codex access to the claude-mem MCP/search plugin by pointing the Codex marketplace at the bundled plugin root.
+- Restores Codex access to the opencode-mem MCP/search plugin by pointing the Codex marketplace at the bundled plugin root.
 - Adds resilient MCP launcher fallbacks for local installs, Codex plugin cache installs, Claude plugin cache installs, and remote marketplace clones.
 - Registers Codex plugin marketplaces during install, enables plugin_hooks, and cleans up legacy AGENTS-based Codex context injection.
 - Includes the Codex session-start hook migration and Codex version-mismatch investigation plan.
@@ -573,14 +573,14 @@ Patch release for the reliability fixes merged in PR #2344.
 
 ## Verification
 - `npm run build`
-- `npm publish` completed for `claude-mem@12.7.1`
+- `npm publish` completed for `opencode-mem@12.7.1`
 
 ## [12.7.0] - 2026-05-06
 
 ## Added
 - Add native Codex hooks integration through the Codex plugin marketplace.
 - Add Codex hook payload normalization, file-context extraction, and Stop hook observation support.
-- Add Codex installer support for `npx claude-mem@latest install` with Codex CLI version guidance.
+- Add Codex installer support for `npx opencode-mem@latest install` with Codex CLI version guidance.
 
 ## Fixed
 - Avoid slow observation flow retries by replacing the worker-side initialization wait with hook-side readiness polling.
@@ -605,14 +605,14 @@ Patch release for the reliability fixes merged in PR #2344.
 
 ## [12.6.2] - 2026-05-05
 
-## Fix: `npx claude-mem@latest install` no longer hangs on tree-sitter-swift
+## Fix: `npx opencode-mem@latest install` no longer hangs on tree-sitter-swift
 
 ### What broke in 12.6.1
 
-PR #2300 moved 21 tree-sitter grammar packages from root `devDependencies` → root `dependencies`. As a result, `npx claude-mem@12.6.1 install` started fetching all 21 grammars at npx time. `tree-sitter-swift`'s postinstall pulled a nested `tree-sitter-cli` that downloads a Rust binary from GitHub and SIGINT'd the install:
+PR #2300 moved 21 tree-sitter grammar packages from root `devDependencies` → root `dependencies`. As a result, `npx opencode-mem@12.6.1 install` started fetching all 21 grammars at npx time. `tree-sitter-swift`'s postinstall pulled a nested `tree-sitter-cli` that downloads a Rust binary from GitHub and SIGINT'd the install:
 
 ```
-npm error path .../node_modules/claude-mem/node_modules/tree-sitter-swift/node_modules/tree-sitter-cli
+npm error path .../node_modules/opencode-mem/node_modules/tree-sitter-swift/node_modules/tree-sitter-cli
 npm error command failed
 npm error signal SIGINT
 npm error Downloading https://github.com/tree-sitter/tree-sitter/releases/download/v0.23.2/tree-sitter-macos-arm64.gz
@@ -652,7 +652,7 @@ PR #2300's `--legacy-peer-deps` and `--omit=dev` install.ts changes are kept —
 ### Foundations (new public modules)
 
 - **F1 `spawnHidden`** (`src/shared/spawn.ts`) — `windowsHide: true` default; 8 spawn sites adopted.
-- **F2 `paths`** (`src/shared/paths.ts`) — 24 hardcoded `homedir() + '.claude-mem'` sites collapsed into 18 named accessors. `CLAUDE_MEM_DATA_DIR` flows through 100% of runtime. Self-extending invariant test.
+- **F2 `paths`** (`src/shared/paths.ts`) — 24 hardcoded `homedir() + '.opencode-mem'` sites collapsed into 18 named accessors. `OPENCODE_MEM_DATA_DIR` flows through 100% of runtime. Self-extending invariant test.
 - **F3 `getUptimeSeconds`** (`src/shared/uptime.ts`) — fixes ms-bug at `Server.ts:165`.
 - **F4 `ClassifiedProviderError`** (`src/services/worker/provider-errors.ts`) — `kind` union (`transient | unrecoverable | rate_limit | quota_exhausted | auth_invalid`); per-provider classifiers; `unrecoverablePatterns` allowlist deleted.
 
@@ -667,7 +667,7 @@ PR #2300's `--legacy-peer-deps` and `--omit=dev` install.ts changes are kept —
 - #2236 — observer agent visible windows on Windows (consumed F1)
 - #2237 / #2238 — hardcoded paths (consumed F2)
 - #2240 — dedupe `observationIds` before Chroma sync
-- #2242 — `check-pending-queue.ts` points at `/api/processing-status` + `/api/processing`; honors `CLAUDE_MEM_WORKER_PORT`
+- #2242 — `check-pending-queue.ts` points at `/api/processing-status` + `/api/processing`; honors `OPENCODE_MEM_WORKER_PORT`
 - #2243 — `scripts/sync-marketplace.cjs` rsync excludes stale `scripts/package.json` + `scripts/node_modules`
 - #2244 — `unrecoverablePatterns` allowlist deleted; worker dispatches on `error.kind`
 - #2247 — Codex `task_complete` event added to session-end matched types
@@ -692,7 +692,7 @@ PR #2300's `--legacy-peer-deps` and `--omit=dev` install.ts changes are kept —
 
 ## Fixed
 
-- **Install failure on Node 25+** — `bun install` no longer fails when trying to compile the unused `tree-sitter` runtime against Node 25's V8 headers (which require C++20). Added `trustedDependencies: ["tree-sitter-cli"]` to the plugin manifest so bun runs only the CLI's prebuilt-binary download script and skips all other lifecycle scripts — including the failing native compile and the unused `.node` bindings of all 24+ grammar packages. claude-mem only ever shells out to the prebuilt `tree-sitter-cli` Rust binary; the runtime native module was never imported. (#2278)
+- **Install failure on Node 25+** — `bun install` no longer fails when trying to compile the unused `tree-sitter` runtime against Node 25's V8 headers (which require C++20). Added `trustedDependencies: ["tree-sitter-cli"]` to the plugin manifest so bun runs only the CLI's prebuilt-binary download script and skips all other lifecycle scripts — including the failing native compile and the unused `.node` bindings of all 24+ grammar packages. opencode-mem only ever shells out to the prebuilt `tree-sitter-cli` Rust binary; the runtime native module was never imported. (#2278)
 
 ## Internal
 
@@ -763,8 +763,8 @@ This release wraps up the cynical-deletion sweep (PR #2141) — closing 27 issue
 - **Tolerators** (silent JSON drops, drifted SSE/SQL filters, passthrough Zod schemas) replaced with strict boundaries.
 
 ### Highlights
-- Multi-account isolation via `CLAUDE_MEM_DATA_DIR` + per-UID worker port (`37700 + uid % 100`), with `CLAUDE_MEM_WORKER_PORT` override (#2101)
-- New `CLAUDE_MEM_INTERNAL=1` trust boundary replaces cwd-based observer-session detection
+- Multi-account isolation via `OPENCODE_MEM_DATA_DIR` + per-UID worker port (`37700 + uid % 100`), with `OPENCODE_MEM_WORKER_PORT` override (#2101)
+- New `OPENCODE_MEM_INTERNAL=1` trust boundary replaces cwd-based observer-session detection
 - Shared `shouldEmitProjectRow` predicate keeps SSE broadcast and pagination filters in sync
 - Pinned `chroma-mcp` to 0.2.6 for reproducible installs
 - Install/uninstall: shared `shutdown-helper` releases file locks before overwrite/delete (#2106)
@@ -776,7 +776,7 @@ This release wraps up the cynical-deletion sweep (PR #2141) — closing 27 issue
 - `shutdown-helper` distinguishes `AbortError` (slow worker) from connection-refused (gone) (Greptile P2)
 - `hooks.json` `$HOME` cache lookup quoted to support paths with spaces
 - `timeline-report` SKILL works on Windows (no `process.getuid()` requirement)
-- `opencode-plugin` validates `CLAUDE_MEM_WORKER_PORT` before use
+- `opencode-plugin` validates `OPENCODE_MEM_WORKER_PORT` before use
 - `uninstall` only strips alias lines, not function declarations
 - `MemoryRoutes` trims whitespace-only `project` before precedence resolution
 - Migration 21 preserves `metadata` column when rebuilding observations table
@@ -822,10 +822,10 @@ One-time pollution cleanup migration plus the v12.4.1 / v12.4.2 ship-blocker fix
 
 ## Headline
 
-**One-shot DB cleanup migration** (`CleanupV12_4_3.ts`) — runs once per data directory at worker startup, marker-file gated, opt-out via `CLAUDE_MEM_SKIP_CLEANUP_V12_4_3=1`. Cleans:
+**One-shot DB cleanup migration** (`CleanupV12_4_3.ts`) — runs once per data directory at worker startup, marker-file gated, opt-out via `OPENCODE_MEM_SKIP_CLEANUP_V12_4_3=1`. Cleans:
 - `observer-sessions` rows that polluted user-facing search/timeline before the observer-sessions filter shipped (cascades to `user_prompts`, `observations`, `session_summaries`).
 - Stuck `pending_messages` chains (≥10 rows per session in `failed`/`processing`) left over from the pre-v12.4.2 context-overflow loop.
-- `~/.claude-mem/chroma/` and `chroma-sync-state.json` so `backfillAllProjects` rebuilds vectors from the cleaned SQLite.
+- `~/.opencode-mem/chroma/` and `chroma-sync-state.json` so `backfillAllProjects` rebuilds vectors from the cleaned SQLite.
 
 Backups before any delete: `VACUUM INTO` first, with a `copyFileSync` fallback that also mirrors `-wal` / `-shm` sidecars so a WAL-mode restore is complete. Pre-flight `statfsSync` disk check before backup. The marker is only written after SQLite purges succeed; Chroma-wipe failures record the error on the marker rather than re-running the backup on every boot.
 
@@ -867,7 +867,7 @@ New: `tests/infrastructure/cleanup-v12_4_3.test.ts` — real on-disk SQLite unde
 - **#2088**: Worker SDK `query()` calls now pass `mcpServers: {}` to suppress inheritance of the user's global MCP servers (Serena, etc.) into observer/knowledge sessions.
 
 ### Notes
-- Cleanup of polluted rows is included in the worker — fresh installs are clean. To clean an existing DB: `sqlite3 ~/.claude-mem/claude-mem.db "DELETE FROM user_prompts WHERE prompt_text LIKE '<task-notification>%';"` (the AFTER-DELETE trigger handles FTS).
+- Cleanup of polluted rows is included in the worker — fresh installs are clean. To clean an existing DB: `sqlite3 ~/.opencode-mem/opencode-mem.db "DELETE FROM user_prompts WHERE prompt_text LIKE '<task-notification>%';"` (the AFTER-DELETE trigger handles FTS).
 - The 5 triage fixes were authored from a multi-agent review of 38 open issues against the v12.3.0–v12.4.1 cleanup arc.
 
 ## [12.4.1] - 2026-04-25
@@ -877,7 +877,7 @@ New: `tests/infrastructure/cleanup-v12_4_3.test.ts` — real on-disk SQLite unde
 Worker restarts were re-scanning Chroma's full metadata for every project on every boot to determine which sqlite ids were already embedded. With ~253 projects and ~92k embeddings, this pegged `chroma-mcp` at 100–422% CPU on each spawn.
 
 ### What changed
-- New `~/.claude-mem/chroma-sync-state.json` watermark cache — per-project highest synced sqlite_id for observations, summaries, and prompts.
+- New `~/.opencode-mem/chroma-sync-state.json` watermark cache — per-project highest synced sqlite_id for observations, summaries, and prompts.
 - Backfill SQL changed from `id NOT IN (huge list)` to `id > watermark`.
 - Live `syncObservation` / `syncSummary` / `syncUserPrompt` bump the watermark on success.
 - One-time bootstrap derives initial watermarks from a single Chroma scan if the state file is missing — after that, Chroma metadata is never scanned again on startup.
@@ -895,14 +895,14 @@ Worker restarts were re-scanning Chroma's full metadata for every project on eve
 ### 🔐 Security observation types + Telegram notifier
 - New observation types: `security_alert` 🚨 (high-priority, triggers notifications) and `security_note` 🔐 (low-priority).
 - Fire-and-forget Telegram notifier — MarkdownV2 formatting, per-observation error isolation, no token logging.
-- Five env vars control behavior. `CLAUDE_MEM_TELEGRAM_ENABLED` master toggle defaults on (no-op without bot token + chat ID).
+- Five env vars control behavior. `OPENCODE_MEM_TELEGRAM_ENABLED` master toggle defaults on (no-op without bot token + chat ID).
 
 ### ⚡ Stop hook: fire-and-forget summarize
 - Eliminated the ~110s terminal block when a session ended. Summarize handler now enqueues and returns immediately.
 - Server-side `SessionCompletionHandler` finalizes off the hook's critical path (generator + HTTP fallback), with singleton sharing across the worker.
 
 ### 🐛 Hooks: worker-port precedence + Windows (#2086 / PR #2084)
-- Hooks now resolve endpoint with the same precedence as the worker: env (`CLAUDE_MEM_WORKER_PORT`, `CLAUDE_MEM_WORKER_HOST`) > settings.json > defaults.
+- Hooks now resolve endpoint with the same precedence as the worker: env (`OPENCODE_MEM_WORKER_PORT`, `OPENCODE_MEM_WORKER_HOST`) > settings.json > defaults.
 - Looser sed regex handles both quoted and unquoted JSON port values.
 - Windows fallback to 37777 when per-uid formula doesn't apply.
 
@@ -914,7 +914,7 @@ Worker restarts were re-scanning Chroma's full metadata for every project on eve
 - Hardcoded 🚨 emoji replaced with per-type mapping.
 
 ### 📝 Docs
-- `version-bump` skill now covers `npm publish` + all 6 manifest paths so `npx claude-mem@<version>` always resolves. Adds `git grep` pre-flight for new manifests.
+- `version-bump` skill now covers `npm publish` + all 6 manifest paths so `npx opencode-mem@<version>` always resolves. Adds `git grep` pre-flight for new manifests.
 
 ### ⚙️ Chores
 -
@@ -925,7 +925,7 @@ Worker restarts were re-scanning Chroma's full metadata for every project on eve
 
 **Detect PID reuse in the worker start-guard so containers can restart cleanly.** (#2082)
 
-The `kill(pid, 0)` liveness check false-positived when the worker's PID file outlived its PID namespace — most commonly after `docker stop` / `docker start` with a bind-mounted `~/.claude-mem`. The new worker would boot as the same low PID (often 11) as the old one, `kill(0)` would report "alive," and the worker would refuse to start *against its own prior incarnation*. Symptom: container appeared to start, immediately exited cleanly with no user-visible error, worker never came up.
+The `kill(pid, 0)` liveness check false-positived when the worker's PID file outlived its PID namespace — most commonly after `docker stop` / `docker start` with a bind-mounted `~/.opencode-mem`. The new worker would boot as the same low PID (often 11) as the old one, `kill(0)` would report "alive," and the worker would refuse to start *against its own prior incarnation*. Symptom: container appeared to start, immediately exited cleanly with no user-visible error, worker never came up.
 
 ### What changed
 
@@ -957,10 +957,10 @@ Shared helpers (`PidInfo`, `captureProcessStartToken`, `verifyPidFileOwnership`)
 ## Cleanup
 
 - Deleted `src/shared/auth-token.ts` and all its dependents (`worker-utils.ts` Authorization header, `ViewerRoutes.ts` token injection, CORS `allowedHeaders: ['Authorization']`, `sync-marketplace.cjs` admin restart header).
-- Stopped tracking `.docker-blowout-data/claude-mem.db` and added the directory to `.gitignore`.
+- Stopped tracking `.docker-blowout-data/opencode-mem.db` and added the directory to `.gitignore`.
 
 ## Full Changelog
-https://github.com/thedotmack/claude-mem/compare/v12.3.6...v12.3.7
+https://github.com/kykiles/opencode-mem/compare/v12.3.6...v12.3.7
 
 ## [12.3.6] - 2026-04-20
 
@@ -1000,7 +1000,7 @@ v12.3.3 shipped 25 bug fixes under "Issue Blowout 2026" but also introduced bear
 - Summarize hook wraps `workerHttpRequest` in try/catch (no more blocking exit code 2)
 - UserPromptSubmit session-init waits for worker health on Linux/WSL
 - MCP loopback self-check uses `process.execPath` instead of bare `node`
-- Nounset-safe `TTY_ARGS` in `docker/claude-mem/run.sh`
+- Nounset-safe `TTY_ARGS` in `docker/opencode-mem/run.sh`
 
 ### Removed from v12.3.3
 - `src/shared/auth-token.ts` (deleted)
@@ -1008,14 +1008,14 @@ v12.3.3 shipped 25 bug fixes under "Issue Blowout 2026" but also introduced bear
 - `Authorization: Bearer` injection in `worker-utils.ts` (hook client), `ViewerRoutes.ts` (browser token injection), viewer `authFetch`, and the OpenCode plugin
 
 ### Upgrade notes
-- `~/.claude-mem/worker-auth-token` from a previous 12.3.3 install is harmless and can be deleted.
+- `~/.opencode-mem/worker-auth-token` from a previous 12.3.3 install is harmless and can be deleted.
 - If your Claude Code session kept the 12.3.3 daemon alive, restart Claude Code once so the fresh 12.3.5 daemon takes over.
 
 ## [12.3.4] - 2026-04-20
 
 ## Rollback of v12.3.3
 
-v12.3.3 (Issue Blowout 2026, PR #2080) broke SessionStart context injection — new sessions received no memory context from claude-mem. This release reverts to the v12.3.2 tree state while the regression is investigated.
+v12.3.3 (Issue Blowout 2026, PR #2080) broke SessionStart context injection — new sessions received no memory context from opencode-mem. This release reverts to the v12.3.2 tree state while the regression is investigated.
 
 ### Reverted
 - #2080 — Issue Blowout 2026 (25 bugs across worker, hooks, security, and search)
@@ -1105,7 +1105,7 @@ This patch release resolves error handling anti-patterns across the entire codeb
 - **GeminiCliHooksInstaller**: Install/uninstall paths now catch `readGeminiSettings()` failures instead of throwing past the `0/1` return contract
 - **OpenClawInstaller**: Malformed `openclaw.json` now throws instead of silently returning `{}` and potentially wiping user config
 - **WindsurfHooksInstaller**: Added null-safe parsing of `hooks.json` with optional chaining
-- **McpIntegrations**: Goose YAML updater now throws when claude-mem markers exist but regex replacement fails
+- **McpIntegrations**: Goose YAML updater now throws when opencode-mem markers exist but regex replacement fails
 - **EnvManager**: Directory setup and existing-file reads are now wrapped in structured error logging
 - **WorktreeAdoption**: `adoptedSqliteIds` mutation delayed until SQL update succeeds
 - **Import script**: Guard against malformed timestamps before `toISOString()`
@@ -1113,26 +1113,26 @@ This patch release resolves error handling anti-patterns across the entire codeb
 
 ### Documentation
 
-- Added README for Docker claude-mem harness
+- Added README for Docker opencode-mem harness
 
 ## [12.3.0] - 2026-04-20
 
 ## New features
 
-### Basic claude-mem Docker container (`docker/claude-mem/`)
-A ready-to-run container for ad-hoc claude-mem testing with zero local setup beyond Docker.
+### Basic opencode-mem Docker container (`docker/opencode-mem/`)
+A ready-to-run container for ad-hoc opencode-mem testing with zero local setup beyond Docker.
 
 - `FROM node:20`; layers pinned Bun (1.3.12) + uv (0.11.7) + the built plugin
 - Non-root `node` user so `--permission-mode bypassPermissions` works headlessly
 - `build.sh`, `run.sh` (auto-extracts OAuth from macOS Keychain or `~/.claude/.credentials.json`, falls back to `ANTHROPIC_API_KEY`), `entrypoint.sh`
-- Persistent `.claude-mem/` mount so the observations DB survives container exit
+- Persistent `.opencode-mem/` mount so the observations DB survives container exit
 
 Validated end-to-end: `PostToolUse` hook → queue → worker SDK call under subscription OAuth → `<observation>` XML → `observations` table → Chroma sync.
 
 ### SWE-bench evaluation harness (`evals/swebench/`)
-Two-container split (our agent image + the upstream SWE-bench harness) for measuring claude-mem's effect on resolve rate.
+Two-container split (our agent image + the upstream SWE-bench harness) for measuring opencode-mem's effect on resolve rate.
 
-- `Dockerfile.agent` → `claude-mem/swebench-agent:latest` (same non-root, version-pinned approach)
+- `Dockerfile.agent` → `opencode-mem/swebench-agent:latest` (same non-root, version-pinned approach)
 - `run-instance.sh` — two-turn ingest/fix protocol per instance; shallow clone at `base_commit` with full-clone fallback
 - `run-batch.py` — parallel orchestrator with OAuth extraction, per-container naming, timeout enforcement + force-cleanup, `--overwrite` guard against silent truncation of partial results
 - `eval.sh` — wraps `python -m swebench.harness.run_evaluation`
@@ -1148,7 +1148,7 @@ Two-container split (our agent image + the upstream SWE-bench harness) for measu
 - Fixed stdin-redirection collision in the consolidated `smoke-test.sh` JSON parser
 - Drop `exec` in `run.sh` so the EXIT trap fires and cleans the temp creds file
 
-**PR:** https://github.com/thedotmack/claude-mem/pull/2076
+**PR:** https://github.com/kykiles/opencode-mem/pull/2076
 
 ## [12.2.3] - 2026-04-19
 
@@ -1156,7 +1156,7 @@ Two-container split (our agent image + the upstream SWE-bench harness) for measu
 
 - **Parser: stop warning on normal observation responses (#2074).** Eliminated the `PARSER Summary response contained <observation> tags instead of <summary> — prompt conditioning may need strengthening` warning that fired on every normal observation turn. The warning was inherited from #1345 when `parseSummary` was only called after summary prompts; after #1633's refactor it runs on every response, so the observation-only fallthrough always tripped. Gated the entire observation-on-summary path on `coerceFromObservation` so only genuine summary-turn coercion failures log.
 
-**Full diff:** https://github.com/thedotmack/claude-mem/compare/v12.2.2...v12.2.3
+**Full diff:** https://github.com/kykiles/opencode-mem/compare/v12.2.2...v12.2.3
 
 ## [12.2.2] - 2026-04-19
 
@@ -1216,7 +1216,7 @@ Full details: #2072
 ## Features
 
 - **Worktree adoption engine** — consolidates merged-worktree observations under the parent project (#2052)
-- **`npx claude-mem adopt`** — new CLI command with `--dry-run` and `--branch X` flags for manual adoption
+- **`npx opencode-mem adopt`** — new CLI command with `--dry-run` and `--branch X` flags for manual adoption
 - **Auto-adoption on worker startup** — merged worktrees are adopted automatically when the worker service starts
 - **CWD-based project remap** — project identity derived from `pending_messages.cwd`, applied on worker startup
 - **Parent + worktree read scope** — worktree sessions now include parent repo observations in their read scope
@@ -1236,7 +1236,7 @@ Full details: #2072
 
 - Removed auto-generated per-directory `CLAUDE.md` files across the tree
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v12.1.6...v12.2.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v12.1.6...v12.2.0
 
 ## [12.1.6] - 2026-04-16
 
@@ -1274,7 +1274,7 @@ Also shipped earlier today: the April 2026 backlog consolidation merged 93 PRs a
 
 ## Upgrade
 ```bash
-npm install -g claude-mem@12.1.5
+npm install -g opencode-mem@12.1.5
 ```
 
 ## [12.1.4] - 2026-04-15
@@ -1290,7 +1290,7 @@ npm install -g claude-mem@12.1.5
 ### Reverted
 - **Remove overengineered summary salvage logic** (#1850) — Reverts PR #1718 which fabricated synthetic summaries from observation data when the AI returned `<observation>` instead of `<summary>` tags. Missing a summary is preferable to creating a fake one with poorly-mapped fields.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v12.1.2...v12.1.3
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v12.1.2...v12.1.3
 
 ## [12.1.2] - 2026-04-15
 
@@ -1311,12 +1311,12 @@ npm install -g claude-mem@12.1.5
 **Data integrity**
 - #1820 Use parent project name for worktree observation writes (@0xLeathery)
 - #1771 Exclude primary-key index from unique-constraint check in migration 7 (@derjochenmeyer)
-- #1770 Restrict ~/.claude-mem/.env permissions to 0600 (@derjochenmeyer)
+- #1770 Restrict ~/.opencode-mem/.env permissions to 0600 (@derjochenmeyer)
 - #1729 Preserve targeted file reads and invalidate on mtime (@quangtran88)
 - #1776 Coerce corpus route filters (@suyua9)
 
 **Docs**
-- #1777 Document CLAUDE_MEM_MODE (@AviArora02-commits)
+- #1777 Document OPENCODE_MEM_MODE (@AviArora02-commits)
 - #1765 Update opencode install instructions (@s-uryansh)
 
 ## Held for rebase
@@ -1367,14 +1367,14 @@ npm install -g claude-mem@12.1.5
 
 ## Knowledge Agents
 
-Build queryable AI "brains" from your claude-mem observation history. Compile a filtered slice of your past work into a corpus, prime it into a Claude session, and ask questions conversationally — getting synthesized, grounded answers instead of raw search results.
+Build queryable AI "brains" from your opencode-mem observation history. Compile a filtered slice of your past work into a corpus, prime it into a Claude session, and ask questions conversationally — getting synthesized, grounded answers instead of raw search results.
 
 ### New Features
 
 - **Knowledge Agent system** — full lifecycle: build, prime, query, reprime, rebuild, delete
 - **6 new MCP tools**: `build_corpus`, `list_corpora`, `prime_corpus`, `query_corpus`, `rebuild_corpus`, `reprime_corpus`
 - **8 new HTTP API endpoints** on the worker service (`/api/corpus/*`)
-- **CorpusBuilder** — searches observations, hydrates full records, calculates stats, persists to `~/.claude-mem/corpora/`
+- **CorpusBuilder** — searches observations, hydrates full records, calculates stats, persists to `~/.opencode-mem/corpora/`
 - **CorpusRenderer** — renders observations into full-detail prompt text for the 1M token context window
 - **KnowledgeAgent** — manages Agent SDK sessions with session resume for multi-turn Q&A
 - **Auto-reprime** — expired sessions are automatically reprimed and retried (only for session errors, not all failures)
@@ -1400,7 +1400,7 @@ Build queryable AI "brains" from your claude-mem observation history. Compile a 
 
 - Comprehensive e2e test suite (31 tests) covering full corpus lifecycle
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v12.0.1...v12.1.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v12.0.1...v12.1.0
 
 ## [12.0.1] - 2026-04-08
 
@@ -1444,7 +1444,7 @@ Merge commit: `abd55977`
 
 ## [12.0.0] - 2026-04-07
 
-# claude-mem v12.0.0
+# opencode-mem v12.0.0
 
 A major release delivering intelligent file-read gating, expanded language support for smart-explore, platform source isolation, and 40+ bug fixes across Windows, Linux, and macOS.
 
@@ -1469,7 +1469,7 @@ Claude and Codex sessions are now fully isolated with `platform_source` column o
 - **File-read decision gate** — blocks redundant file reads with observation timeline injection (#1564, #1629, #1641)
 - **24-language smart-explore** — AST-based code exploration across all major languages
 - **Platform source isolation** — Claude/Codex session namespacing with DB migration
-- **CLAUDE.local.md support** — `CLAUDE_MEM_FOLDER_USE_LOCAL_MD` setting for writing to local-only config
+- **CLAUDE.local.md support** — `OPENCODE_MEM_FOLDER_USE_LOCAL_MD` setting for writing to local-only config
 - **OpenClaw workerHost** — Docker deployment support for OpenClaw plugin
 - **Codex plugin manifest** — discoverability in Codex marketplace
 - **File-size threshold** — skip file-read gating for small files
@@ -1504,7 +1504,7 @@ Claude and Codex sessions are now fully isolated with `platform_source` column o
 - Address path safety, SQL injection, and gate scoping in file-read hook
 
 ### Windows
-- Fix `isMainModule` CJS branch failure on Bun — add `CLAUDE_MEM_MANAGED` fallback
+- Fix `isMainModule` CJS branch failure on Bun — add `OPENCODE_MEM_MANAGED` fallback
 - Use `cmd /c` to execute `bun.cmd` on Windows
 - Prefer `bun.cmd` over bun shell script on Windows
 - Add `shell: true` on Windows to spawn bun from npm
@@ -1540,23 +1540,23 @@ Claude and Codex sessions are now fully isolated with `platform_source` column o
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v11.0.1...v12.0.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v11.0.1...v12.0.0
 
 ## [11.0.1] - 2026-04-06
 
-**Patch release** — Changes `CLAUDE_MEM_SEMANTIC_INJECT` default from `true` to `false`.
+**Patch release** — Changes `OPENCODE_MEM_SEMANTIC_INJECT` default from `true` to `false`.
 
 ### What changed
 - Per-prompt Chroma vector search on `UserPromptSubmit` is now **opt-in** rather than opt-out
 - Reduces latency and context noise for users who haven't explicitly enabled it
-- Users can re-enable via `CLAUDE_MEM_SEMANTIC_INJECT=true` in `~/.claude-mem/settings.json`
+- Users can re-enable via `OPENCODE_MEM_SEMANTIC_INJECT=true` in `~/.opencode-mem/settings.json`
 
 ### Why
 The semantic inject fires on every prompt and often surfaces tangentially related observations. A more precise file-context approach (PreToolUse timeline gate) is in development as a replacement.
 
 ## [11.0.0] - 2026-04-05
 
-## claude-mem v11.0.0
+## opencode-mem v11.0.0
 
 **4 releases today** · 21 commits · 6,051 insertions · 34 files changed
 
@@ -1569,7 +1569,7 @@ Every `UserPromptSubmit` now queries ChromaDB for the top-N most relevant past o
 The SDK agent now inspects pending queue complexity before selecting a model. Simple tool-only queues (Read, Glob, Grep) route to Haiku; mixed/complex queues use the default model. Production result: **~52% cost reduction** on SDK agent usage with quality indistinguishable from Sonnet. Includes a new `observation_feedback` table for future Thompson Sampling optimization.
 
 #### Multi-Machine Observation Sync (#1570)
-New `claude-mem-sync` CLI with `push`, `pull`, `sync`, and `status` commands. Bidirectional sync of observations and session summaries between machines via SSH/SCP with deduplication by `(created_at, title)`. Tested syncing 3,400+ observations between two physical servers — a session on the remote machine used transferred memory to deliver a real feature PR.
+New `opencode-mem-sync` CLI with `push`, `pull`, `sync`, and `status` commands. Bidirectional sync of observations and session summaries between machines via SSH/SCP with deduplication by `(created_at, title)`. Tested syncing 3,400+ observations between two physical servers — a session on the remote machine used transferred memory to deliver a real feature PR.
 
 #### Orphaned Message Drain (#1567)
 When `deleteSession()` aborts the SDK agent via SIGTERM, pending messages are now marked abandoned instead of remaining in `pending` status forever. Production evidence: 15 orphaned messages found before fix → 0 orphaned messages over 23 days after fix.
@@ -1598,7 +1598,7 @@ Features in this release were contributed by **Alessandro Costa** ([@alessandrop
 
 ### Release History
 
-This release consolidates v10.7.0 through v11.0.0, all shipped on April 4, 2026. For the full v10.x era (267 commits, 39 releases), see [v10.7.0](https://github.com/thedotmack/claude-mem/releases/tag/v10.7.0) and earlier.
+This release consolidates v10.7.0 through v11.0.0, all shipped on April 4, 2026. For the full v10.x era (267 commits, 39 releases), see [v10.7.0](https://github.com/kykiles/opencode-mem/releases/tag/v10.7.0) and earlier.
 
 ## [10.7.2] - 2026-04-05
 
@@ -1622,7 +1622,7 @@ This release consolidates v10.7.0 through v11.0.0, all shipped on April 4, 2026.
 ## What's New
 
 ### Simplified Installation
-- Install command now delegates to native Claude Code plugin system: `claude plugin marketplace add thedotmack/claude-mem && claude plugin install claude-mem`
+- Install command now delegates to native Claude Code plugin system: `claude plugin marketplace add kykiles/opencode-mem && claude plugin install opencode-mem`
 - Reduced install.ts from 536 lines to 36 lines
 
 ### Multi-IDE Support (NPX CLI)
@@ -1699,7 +1699,7 @@ The viewer UI activity spinner would spin indefinitely because `isAnySessionProc
 ## [10.6.1] - 2026-03-18
 
 ### New Features
-- **Timeline Report Skill** — New `/timeline-report` skill generates narrative "Journey Into [Project]" reports from claude-mem's development history with token-aware economics
+- **Timeline Report Skill** — New `/timeline-report` skill generates narrative "Journey Into [Project]" reports from opencode-mem's development history with token-aware economics
 - **Git Worktree Detection** — Timeline report automatically detects git worktrees and uses parent project as data source
 - **Compressed Context Output** — Markdown context injection compressed ~53% (tables → compact flat lines), reducing token overhead in session starts
 - **Full Observation Fetch** — Added `full=true` parameter to `/api/context/inject` for fetching all observations
@@ -1747,7 +1747,7 @@ The viewer settings hook used `||` instead of `??`, which silently replaced back
 - **Clean up `.gitignore`** — remove stale `~*/`, `http*/`, `https*/` patterns and duplicate `datasets/` entry
 
 ### Tests
-- Rewrote supervisor index tests to use temp directories instead of relying on real `~/.claude-mem/worker.pid`
+- Rewrote supervisor index tests to use temp directories instead of relying on real `~/.opencode-mem/worker.pid`
 - Added deterministic test cases for missing, invalid, stale, and alive PID file states
 - Removed unused `dataDir` from shutdown test fixtures
 
@@ -1759,7 +1759,7 @@ The viewer settings hook used `||` instead of `??`, which silently replaced back
 
 ### Cleanup
 
-- Removed dead `CLAUDE_MEM_CONTEXT_OBSERVATION_TYPES` and `CLAUDE_MEM_CONTEXT_OBSERVATION_CONCEPTS` settings constants
+- Removed dead `OPENCODE_MEM_CONTEXT_OBSERVATION_TYPES` and `OPENCODE_MEM_CONTEXT_OBSERVATION_CONCEPTS` settings constants
 - Deleted `src/constants/observation-metadata.ts` (no longer needed)
 - Removed observation type/concept filter UI controls from the viewer's Context Settings modal
 
@@ -1775,7 +1775,7 @@ The viewer settings hook used `||` instead of `??`, which silently replaced back
 
 ### Law Study Mode
 
-Adds `law-study` — a purpose-built claude-mem mode for law students.
+Adds `law-study` — a purpose-built opencode-mem mode for law students.
 
 **Observation Types:**
 - **Case Holding** — 2-3 sentence brief with extracted legal rule
@@ -1893,7 +1893,7 @@ Massive reliability release: 30+ root-cause bug fixes across 10 triage phases, p
 ### New Features
 
 - **Session custom titles** — Agents can now set `custom_title` on sessions for attribution (migration 23, new endpoint)
-- **Chroma toggle** — `CLAUDE_MEM_CHROMA_ENABLED` setting allows SQLite-only fallback mode (#707)
+- **Chroma toggle** — `OPENCODE_MEM_CHROMA_ENABLED` setting allows SQLite-only fallback mode (#707)
 - **Plugin disabled state** — Early exit check in all hook entry points when plugin is disabled (#781)
 - **Context re-injection guard** — `contextInjected` session flag prevents re-injecting context on every UserPromptSubmit turn (#1079)
 
@@ -1956,7 +1956,7 @@ Massive reliability release: 30+ root-cause bug fixes across 10 triage phases, p
 
 ### Bug Fixes
 
-- Fixed session context footer to reference the claude-mem skill instead of MCP search tools for accessing memories
+- Fixed session context footer to reference the opencode-mem skill instead of MCP search tools for accessing memories
 
 ## [10.3.2] - 2026-02-23
 
@@ -2022,7 +2022,7 @@ Observer Claude CLI subprocesses were accumulating as zombies — processes that
 **Fix — dual-layer approach:**
 
 1. **Immediate cleanup:** Added `ensureProcessExit()` calls to the `finally` blocks in both `SessionRoutes.ts` and `worker-service.ts`, ensuring every session exit path kills its subprocess
-2. **Periodic reaping:** Added `reapStaleSessions()` to `SessionManager` — a background interval that scans `~/.claude-mem/observer-sessions/` for stale PID files, verifies the process is still running, and kills any orphans with SIGKILL escalation
+2. **Periodic reaping:** Added `reapStaleSessions()` to `SessionManager` — a background interval that scans `~/.opencode-mem/observer-sessions/` for stale PID files, verifies the process is still running, and kills any orphans with SIGKILL escalation
 
 This ensures no observer subprocess survives beyond its session lifetime, even in crash scenarios.
 
@@ -2050,7 +2050,7 @@ Fixes the Chroma backfill system to correctly sync all SQLite observations into 
 
 - **Backfill all projects on startup** — `backfillAllProjects()` now runs on worker startup, iterating all projects in SQLite and syncing missing observations to Chroma. Previously `ensureBackfilled()` existed but was never called, leaving Chroma with incomplete data after cache clears.
 
-- **Fixed critical collection routing bug** — Backfill now uses the shared `cm__claude-mem` collection (matching how DatabaseManager and SearchManager operate) instead of creating per-project orphan collections that no search path reads from.
+- **Fixed critical collection routing bug** — Backfill now uses the shared `cm__opencode-mem` collection (matching how DatabaseManager and SearchManager operate) instead of creating per-project orphan collections that no search path reads from.
 
 - **Hardened collection name sanitization** — Project names with special characters (e.g., "YC Stuff") are sanitized for Chroma's naming constraints, including stripping trailing non-alphanumeric characters.
 
@@ -2074,7 +2074,7 @@ Addresses the persistent embedding pipeline failures reported across #1104, #110
 
 - **Removed nuclear `bun pm cache rm`** from both `smart-install.js` and `sync-marketplace.cjs`. This was added in v10.2.2 for the now-removed sharp dependency but destroyed all cached packages, breaking the ONNX resolution chain.
 - **Added `bun install` in plugin cache directory** after marketplace sync. The cache directory had a `package.json` with `@chroma-core/default-embed` as a dependency but never ran install, so the worker couldn't resolve it at runtime.
-- **Moved HuggingFace model cache to `~/.claude-mem/models/`** outside `node_modules`. The ~23MB ONNX model was stored inside `node_modules/@huggingface/transformers/.cache/`, so any reinstall or cache clear corrupted it.
+- **Moved HuggingFace model cache to `~/.opencode-mem/models/`** outside `node_modules`. The ~23MB ONNX model was stored inside `node_modules/@huggingface/transformers/.cache/`, so any reinstall or cache clear corrupted it.
 - **Added self-healing retry** for Protobuf parsing failures. If the downloaded model is corrupted, the cache is cleared and re-downloaded automatically on next use.
 
 ### Files Changed
@@ -2120,13 +2120,13 @@ Addresses the persistent embedding pipeline failures reported across #1104, #110
 ### Defaults Changes
 
 - **Cleaner out-of-box experience** — New installs now default to a streamlined context display:
-  - Read tokens column: hidden (`CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS: false`)
-  - Work tokens column: hidden (`CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS: false`)
-  - Savings amount: hidden (`CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT: false`)
-  - Full observation expansion: disabled (`CLAUDE_MEM_CONTEXT_FULL_COUNT: 0`)
+  - Read tokens column: hidden (`OPENCODE_MEM_CONTEXT_SHOW_READ_TOKENS: false`)
+  - Work tokens column: hidden (`OPENCODE_MEM_CONTEXT_SHOW_WORK_TOKENS: false`)
+  - Savings amount: hidden (`OPENCODE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT: false`)
+  - Full observation expansion: disabled (`OPENCODE_MEM_CONTEXT_FULL_COUNT: 0`)
   - Savings percentage remains visible by default
 
-  Existing users are unaffected — your `~/.claude-mem/settings.json` overrides these defaults.
+  Existing users are unaffected — your `~/.opencode-mem/settings.json` overrides these defaults.
 
 ### Technical Details
 
@@ -2169,7 +2169,7 @@ Addresses the persistent embedding pipeline failures reported across #1104, #110
 
 ## Infrastructure
 
-- Added multi-tenancy support for claude-mem Pro
+- Added multi-tenancy support for opencode-mem Pro
 - Updated OpenClaw install URLs to `install.cmem.ai`
 - Added Vercel deploy workflow for install scripts
 - Added `.claude/plans` and `.claude/worktrees` to `.gitignore`
@@ -2310,24 +2310,24 @@ Closes #1063, closes #695. Relates to #1010, #707.
 
 ## OpenClaw Plugin — Persistent Memory for OpenClaw Agents
 
-Claude-mem now has an official [OpenClaw](https://openclaw.ai) plugin, bringing persistent memory to agents running on the OpenClaw gateway. This is a major milestone — claude-mem's memory system is no longer limited to Claude Code sessions.
+Claude-mem now has an official [OpenClaw](https://openclaw.ai) plugin, bringing persistent memory to agents running on the OpenClaw gateway. This is a major milestone — opencode-mem's memory system is no longer limited to Claude Code sessions.
 
 ### What It Does
 
-The plugin bridges claude-mem's observation pipeline with OpenClaw's embedded runner (`pi-embedded`), which calls the Anthropic API directly without spawning a `claude` process. Three core capabilities:
+The plugin bridges opencode-mem's observation pipeline with OpenClaw's embedded runner (`pi-embedded`), which calls the Anthropic API directly without spawning a `claude` process. Three core capabilities:
 
-1. **Observation Recording** — Captures every tool call from OpenClaw agents and sends it to the claude-mem worker for AI-powered compression and storage
+1. **Observation Recording** — Captures every tool call from OpenClaw agents and sends it to the opencode-mem worker for AI-powered compression and storage
 2. **MEMORY.md Live Sync** — Writes a continuously-updated memory timeline to each agent's workspace, so agents start every session with full context from previous work
 3. **Observation Feed** — Streams new observations to messaging channels (Telegram, Discord, Slack, Signal, WhatsApp, LINE) in real-time via SSE
 
 ### Quick Start
 
-Add claude-mem to your OpenClaw gateway config:
+Add opencode-mem to your OpenClaw gateway config:
 
 ```json
 {
   "plugins": {
-    "claude-mem": {
+    "opencode-mem": {
       "enabled": true,
       "config": {
         "project": "my-project",
@@ -2343,19 +2343,19 @@ Add claude-mem to your OpenClaw gateway config:
 }
 ```
 
-The claude-mem worker service must be running on the same machine (`localhost:37777`).
+The opencode-mem worker service must be running on the same machine (`localhost:37777`).
 
 ### Commands
 
-- `/claude-mem-status` — Worker health check, active sessions, feed connection state
-- `/claude-mem-feed` — Show/toggle observation feed status
-- `/claude-mem-feed on|off` — Enable/disable feed
+- `/opencode-mem-status` — Worker health check, active sessions, feed connection state
+- `/opencode-mem-feed` — Show/toggle observation feed status
+- `/opencode-mem-feed on|off` — Enable/disable feed
 
 ### How the Event Lifecycle Works
 
 ```
 OpenClaw Gateway
-  ├── session_start ──────────→ Init claude-mem session
+  ├── session_start ──────────→ Init opencode-mem session
   ├── before_agent_start ─────→ Sync MEMORY.md + track workspace
   ├── tool_result_persist ────→ Record observation + re-sync MEMORY.md
   ├── agent_end ──────────────→ Summarize + complete session
@@ -2365,7 +2365,7 @@ OpenClaw Gateway
 
 All observation recording and MEMORY.md syncs are fire-and-forget — they never block the agent.
 
-📖 Full documentation: [OpenClaw Integration Guide](https://docs.claude-mem.ai/docs/openclaw-integration)
+📖 Full documentation: [OpenClaw Integration Guide](https://docs.opencode-mem.ai/docs/openclaw-integration)
 
 ---
 
@@ -2430,9 +2430,9 @@ Closed 37+ duplicate/stale/invalid issues across multiple triage phases, signifi
 ### New Features
 
 - **Manual memory storage** — New \`save_memory\` MCP tool and \`POST /api/memory/save\` endpoint for explicit memory capture (PR #662 by @darconada, closes #645)
-- **Project exclusion setting** — \`CLAUDE_MEM_EXCLUDED_PROJECTS\` glob patterns to exclude entire projects from tracking (PR #920 by @Spunky84)
-- **Folder exclude setting** — \`CLAUDE_MEM_FOLDER_MD_EXCLUDE\` JSON array to exclude paths from CLAUDE.md generation, fixing Xcode/drizzle build conflicts (PR #699 by @leepokai, closes #620)
-- **Folder CLAUDE.md opt-in** — \`CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED\` now defaults to \`false\` (opt-in) instead of always-on (PR #913 by @superbiche)
+- **Project exclusion setting** — \`OPENCODE_MEM_EXCLUDED_PROJECTS\` glob patterns to exclude entire projects from tracking (PR #920 by @Spunky84)
+- **Folder exclude setting** — \`OPENCODE_MEM_FOLDER_MD_EXCLUDE\` JSON array to exclude paths from CLAUDE.md generation, fixing Xcode/drizzle build conflicts (PR #699 by @leepokai, closes #620)
+- **Folder CLAUDE.md opt-in** — \`OPENCODE_MEM_FOLDER_CLAUDEMD_ENABLED\` now defaults to \`false\` (opt-in) instead of always-on (PR #913 by @superbiche)
 - **Generate/clean CLI commands** — \`generate\` and \`clean\` commands for CLAUDE.md management with \`--dry-run\` support (PR #657 by @thedotmack)
 - **Ragtime email investigation** — Batch processor for email investigation workflows (PR #863 by @thedotmack)
 
@@ -2508,7 +2508,7 @@ Thank you to the 35+ contributors whose PRs were reviewed in this release:
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v9.0.17...v9.1.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v9.0.17...v9.1.0
 
 ## [9.0.17] - 2026-02-05
 
@@ -2560,7 +2560,7 @@ Resolves the "Worker did not become ready within 15 seconds" timeout error that 
 
 ### Isolated Credentials (#745)
 - **Prevents API key hijacking** from random project `.env` files
-- Credentials now sourced exclusively from `~/.claude-mem/.env`
+- Credentials now sourced exclusively from `~/.opencode-mem/.env`
 - Only whitelisted environment variables passed to SDK `query()` calls
 - Authentication method logging shows whether using Claude Code CLI subscription billing or explicit API key
 
@@ -2587,7 +2587,7 @@ The in-process architecture means hooks no longer need to spawn separate worker 
 - Better resource utilization
 - Elimination of process spawn failures on Windows
 
-Full PR: https://github.com/thedotmack/claude-mem/pull/722
+Full PR: https://github.com/kykiles/opencode-mem/pull/722
 
 ## [9.0.13] - 2026-02-05
 
@@ -2622,7 +2622,7 @@ This happened because Claude Code stores credentials in the config directory, an
 ### Solution
 
 Observer sessions now use the SDK's `cwd` option instead:
-- Sessions stored under `~/.claude-mem/observer-sessions/` project
+- Sessions stored under `~/.opencode-mem/observer-sessions/` project
 - Auth credentials in `~/.claude/` remain accessible
 - Observer sessions still won't pollute `claude --resume` lists
 
@@ -2635,9 +2635,9 @@ Anyone running v9.0.11 who saw "Invalid API key" errors should upgrade immediate
 ## Bug Fixes
 
 ### Observer Session Isolation (#837)
-Observer sessions created by claude-mem were polluting the `claude --resume` list, cluttering it with internal plugin sessions that users never intend to resume. In one user's case, 74 observer sessions out of ~220 total (34% noise).
+Observer sessions created by opencode-mem were polluting the `claude --resume` list, cluttering it with internal plugin sessions that users never intend to resume. In one user's case, 74 observer sessions out of ~220 total (34% noise).
 
-**Solution**: Observer processes now use a dedicated config directory (`~/.claude-mem/observer-config/`) to isolate their session files from user sessions.
+**Solution**: Observer processes now use a dedicated config directory (`~/.opencode-mem/observer-config/`) to isolate their session files from user sessions.
 
 Thanks to @Glucksberg for this fix! Fixes #832.
 
@@ -2649,7 +2649,7 @@ After a worker restart, stale `memory_session_id` values in the database could c
 Thanks to @bigph00t for this fix! Fixes #817.
 
 ---
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v9.0.10...v9.0.11
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v9.0.10...v9.0.11
 
 ## [9.0.10] - 2026-01-26
 
@@ -2672,7 +2672,7 @@ The folder-level CLAUDE.md generation was failing to find observations due to a 
 
 ### Prevent Creation of Empty CLAUDE.md Files (#809)
 
-Previously, claude-mem would create new `CLAUDE.md` files in project directories even when there was no activity to display, cluttering codebases with empty context files showing only "*No recent activity*".
+Previously, opencode-mem would create new `CLAUDE.md` files in project directories even when there was no activity to display, cluttering codebases with empty context files showing only "*No recent activity*".
 
 **What changed:** The `updateFolderClaudeMdFiles` function now checks if the formatted content contains no activity before writing. If a `CLAUDE.md` file doesn't already exist and there's nothing to show, it will be skipped entirely. Existing files will still be updated to reflect "No recent activity" if that's the current state.
 
@@ -2707,7 +2707,7 @@ This release fixes a critical issue where Claude haiku subprocesses spawned by t
 - `src/services/worker/SessionManager.ts`: Verify subprocess exit on delete
 - `src/services/worker-service.ts`: Start/stop orphan reaper
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v9.0.7...v9.0.8
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v9.0.7...v9.0.8
 
 Fixes #737
 
@@ -2715,7 +2715,7 @@ Fixes #737
 
 ## Windows Console Popup Fix
 
-This release eliminates the annoying console window popups that Windows users experienced when claude-mem spawned background processes.
+This release eliminates the annoying console window popups that Windows users experienced when opencode-mem spawned background processes.
 
 ### Fixed
 - **Windows console popups eliminated** - Daemon spawn and Chroma operations no longer create visible console windows (#748, #708, #681, #676)
@@ -2775,7 +2775,7 @@ This release adds the `/do` and `/make-plan` development commands to the plugin 
 
 ### Full Changelog
 
-https://github.com/thedotmack/claude-mem/compare/v9.0.3...v9.0.4
+https://github.com/kykiles/opencode-mem/compare/v9.0.3...v9.0.4
 
 ## [9.0.3] - 2026-01-10
 
@@ -2813,7 +2813,7 @@ Fixed an issue where the worker service startup wasn't producing proper JSON sta
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v9.0.1...v9.0.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v9.0.1...v9.0.2
 
 ## [9.0.1] - 2026-01-08
 
@@ -2848,7 +2848,7 @@ Fixed an issue where the worker service startup wasn't producing proper JSON sta
 - Removed hardcoded fake token counts from context injection
 - Standardized Claude Code 2.1.0 note wording across documentation
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v9.0.0...v9.0.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v9.0.0...v9.0.1
 
 ## [9.0.0] - 2026-01-06
 
@@ -2862,7 +2862,7 @@ Version 9.0.0 introduces the **Live Context System** - a major new capability th
 - **Folder CLAUDE.md Files**: Each directory now gets an auto-generated CLAUDE.md file containing a chronological timeline of recent development activity
 - **Activity Timelines**: Tables show observation ID, time, type, title, and estimated token cost for relevant work in each folder
 - **Worktree Support**: Proper detection of git worktrees with project-aware filtering to show only relevant observations per worktree
-- **Configurable Limits**: Control observation count via `CLAUDE_MEM_CONTEXT_OBSERVATIONS` setting
+- **Configurable Limits**: Control observation count via `OPENCODE_MEM_CONTEXT_OBSERVATIONS` setting
 
 #### Modular Architecture Refactor
 - **Service Layer Decomposition**: Major refactoring from monolithic worker-service to modular domain services
@@ -2884,7 +2884,7 @@ Version 9.0.0 introduces the **Live Context System** - a major new capability th
 
 #### Settings & Configuration
 - **Auto-Creation**: Settings file automatically created with defaults on first run
-- **Worker Host Configuration**: `CLAUDE_MEM_WORKER_HOST` setting for custom worker endpoints
+- **Worker Host Configuration**: `OPENCODE_MEM_WORKER_HOST` setting for custom worker endpoints
 - Settings validation with helpful error messages
 
 #### MCP Tools
@@ -2913,7 +2913,7 @@ Version 9.0.0 introduces the **Live Context System** - a major new capability th
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.5.10...v9.0.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.5.10...v9.0.0
 
 ## [8.5.10] - 2026-01-06
 
@@ -2942,13 +2942,13 @@ See PR #558 for complete details and diagnostic reports.
 
 The context injection header now displays the current date and time, making it easier to understand when context was generated.
 
-**Example:** `[claude-mem] recent context, 2026-01-04 2:46am EST`
+**Example:** `[opencode-mem] recent context, 2026-01-04 2:46am EST`
 
 This appears in both terminal (colored) output and markdown format, including empty state messages.
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.5.8...v8.5.9
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.5.8...v8.5.9
 
 ## [8.5.8] - 2026-01-04
 
@@ -2999,7 +2999,7 @@ This release refactors the monolithic service architecture into focused, single-
 - Updated esbuild and MCP SDK to latest versions
 - Removed `bun.lock` from version control
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.5.6...v8.5.7
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.5.6...v8.5.7
 
 ## [8.5.6] - 2026-01-04
 
@@ -3046,7 +3046,7 @@ This patch release enhances error handling and logging across all worker service
 ### Investigation Reports
 - Added detailed analysis documents for generator failures and observation duplication regressions
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.5.4...v8.5.5
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.5.4...v8.5.5
 
 ## [8.5.4] - 2026-01-02
 
@@ -3227,7 +3227,7 @@ These files now have strict error propagation (no catch-and-continue):
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.5.2...v8.5.3
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.5.2...v8.5.3
 
 ## [8.5.2] - 2025-12-31
 
@@ -3288,7 +3288,7 @@ This is a major release introducing **full Cursor IDE support**. Claude-mem now 
 
 ### Works Without Claude Code
 
-You can now use claude-mem with Cursor using free AI providers:
+You can now use opencode-mem with Cursor using free AI providers:
 - **Gemini** (recommended): 1,500 free requests/day, no credit card required
 - **OpenRouter**: Access to 100+ models including free options
 - **Claude SDK**: For Claude Code subscribers
@@ -3320,11 +3320,11 @@ Complete hook integration with Cursor's native hook system:
 - `context-inject.sh/.ps1` - Load relevant history
 
 ### Context Injection via `.cursor/rules`
-Relevant past context is automatically injected into Cursor sessions via the `.cursor/rules/claude-mem-context.mdc` file, giving your AI immediate awareness of prior work.
+Relevant past context is automatically injected into Cursor sessions via the `.cursor/rules/opencode-mem-context.mdc` file, giving your AI immediate awareness of prior work.
 
 ### Project Registry
 Multi-project support with automatic project detection:
-- Projects registered in `~/.claude-mem/cursor-projects.json`
+- Projects registered in `~/.opencode-mem/cursor-projects.json`
 - Context automatically scoped to current project
 - Works across multiple workspaces simultaneously
 
@@ -3345,7 +3345,7 @@ Full MCP server integration for Cursor:
 
 ## Documentation
 
-Full documentation available at [docs.claude-mem.ai/cursor](https://docs.claude-mem.ai/cursor):
+Full documentation available at [docs.opencode-mem.ai/cursor](https://docs.opencode-mem.ai/cursor):
 - Cursor Integration Overview
 - Gemini Setup Guide (free tier)
 - OpenRouter Setup Guide
@@ -3356,20 +3356,20 @@ Full documentation available at [docs.claude-mem.ai/cursor](https://docs.claude-
 ### For Cursor-Only Users (No Claude Code)
 
 ```bash
-git clone https://github.com/thedotmack/claude-mem.git
-cd claude-mem && bun install && bun run build
+git clone https://github.com/kykiles/opencode-mem.git
+cd opencode-mem && bun install && bun run build
 bun run cursor:setup
 ```
 
 ### For Claude Code Users
 
 ```bash
-/plugin marketplace add thedotmack/claude-mem
-/plugin install claude-mem
-claude-mem cursor install
+/plugin marketplace add kykiles/opencode-mem
+/plugin install opencode-mem
+opencode-mem cursor install
 ```
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.2.10...v8.5.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.2.10...v8.5.0
 
 ## [8.2.10] - 2025-12-30
 
@@ -3413,7 +3413,7 @@ Thanks @yungweng for the detailed bug report!
 
 This patch release addresses a race condition where SIGTERM/SIGINT signals arriving during ChromaSync initialization could leave orphaned chroma-mcp processes. The fix moves signal handler registration from the start() method to the constructor, ensuring cleanup handlers exist throughout the entire initialization lifecycle.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.2.7...v8.2.8
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.2.7...v8.2.8
 
 ## [8.2.7] - 2025-12-29
 
@@ -3427,7 +3427,7 @@ This patch release addresses a race condition where SIGTERM/SIGINT signals arriv
 
 This release significantly reduces the token footprint of the plugin's MCP tools and documentation.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.2.6...v8.2.7
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.2.6...v8.2.7
 
 ## [8.2.6] - 2025-12-29
 
@@ -3439,7 +3439,7 @@ This release significantly reduces the token footprint of the plugin's MCP tools
 - Memory session ID capture for agent resume functionality
 - Comprehensive test suite for session ID refactoring
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.2.5...v8.2.6
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.2.5...v8.2.6
 
 ## [8.2.5] - 2025-12-28
 
@@ -3457,7 +3457,7 @@ This patch release addresses several issues discovered after the session continu
 2. ChromaSync initialization is now lazy to prevent silent failures during startup
 3. Session linger timeout removed to eliminate artificial 5-second delays on session completion
 
-Full changelog: https://github.com/thedotmack/claude-mem/compare/v8.2.4...v8.2.5
+Full changelog: https://github.com/kykiles/opencode-mem/compare/v8.2.4...v8.2.5
 
 ## [8.2.4] - 2025-12-28
 
@@ -3469,7 +3469,7 @@ Patch release v8.2.4
 
 - Fix worker port environment variable in smart-install script
 - Implement file-based locking mechanism for worker operations to prevent race conditions
-- Fix restart command references in documentation (changed from `claude-mem restart` to `npm run worker:restart`)
+- Fix restart command references in documentation (changed from `opencode-mem restart` to `npm run worker:restart`)
 
 ## [8.2.2] - 2025-12-27
 
@@ -3557,7 +3557,7 @@ Added comprehensive test suites:
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.2.0...v8.2.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.2.0...v8.2.1
 
 ## [8.2.0] - 2025-12-26
 
@@ -3596,26 +3596,26 @@ This release introduces **Google Gemini API** as an alternative to the Claude Ag
 
 ### 📚 Documentation
 
-- New [Gemini Provider documentation](https://docs.claude-mem.ai/usage/gemini-provider) with setup guide and troubleshooting
+- New [Gemini Provider documentation](https://docs.opencode-mem.ai/usage/gemini-provider) with setup guide and troubleshooting
 
 ### ⚙️ New Settings
 
 | Setting | Values | Description |
 |---------|--------|-------------|
-| `CLAUDE_MEM_PROVIDER` | `claude` \| `gemini` | AI provider for observation extraction |
-| `CLAUDE_MEM_GEMINI_API_KEY` | string | Gemini API key |
-| `CLAUDE_MEM_GEMINI_MODEL` | see above | Gemini model to use |
+| `OPENCODE_MEM_PROVIDER` | `claude` \| `gemini` | AI provider for observation extraction |
+| `OPENCODE_MEM_GEMINI_API_KEY` | string | Gemini API key |
+| `OPENCODE_MEM_GEMINI_MODEL` | see above | Gemini model to use |
 | `gemini_has_billing` | boolean | Enable higher rate limits for paid accounts |
 
 ---
 
 ## 🙏 Contributor Shout-out
 
-Huge thanks to **Alexander Knigge** ([@AlexanderKnigge](https://x.com/AlexanderKnigge)) for contributing the Gemini provider implementation! This feature significantly expands claude-mem's flexibility and gives users more choice in their AI backend.
+Huge thanks to **Alexander Knigge** ([@AlexanderKnigge](https://x.com/AlexanderKnigge)) for contributing the Gemini provider implementation! This feature significantly expands opencode-mem's flexibility and gives users more choice in their AI backend.
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v8.1.0...v8.2.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v8.1.0...v8.2.0
 
 ## [8.1.0] - 2025-12-25
 
@@ -3709,7 +3709,7 @@ Since we're now explicit about recovery instead of silently papering over proble
 
 ---
 
-**PR #437:** https://github.com/thedotmack/claude-mem/pull/437
+**PR #437:** https://github.com/kykiles/opencode-mem/pull/437
 
 *The evidence: Observations #3646, #6738, #7598, #12860, #12866, #13046, #15259, #20995, #21055, #30524, #31080, #32114, #32116, #32125, #32126, #32127, #32146, #32324—the complete record of a 3-month battle.*
 
@@ -3759,10 +3759,10 @@ New "chill" remix of code mode for users who want fewer, more selective observat
 
 ## Usage
 
-Set in ~/.claude-mem/settings.json:
+Set in ~/.opencode-mem/settings.json:
 ```json
 {
-  "CLAUDE_MEM_MODE": "code--chill"
+  "OPENCODE_MEM_MODE": "code--chill"
 }
 ```
 
@@ -3812,12 +3812,12 @@ Set in ~/.claude-mem/settings.json:
 
 - **None** - Mode system is fully backward compatible
 - Default mode is 'code' (existing behavior)
-- Settings: New `CLAUDE_MEM_MODE` option (defaults to 'code')
+- Settings: New `OPENCODE_MEM_MODE` option (defaults to 'code')
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.4.5...v8.0.0
-**View PR**: https://github.com/thedotmack/claude-mem/pull/412
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.4.5...v8.0.0
+**View PR**: https://github.com/kykiles/opencode-mem/pull/412
 
 ## [7.4.5] - 2025-12-21
 
@@ -3831,7 +3831,7 @@ Set in ~/.claude-mem/settings.json:
 
 * Code quality: comprehensive nonsense audit cleanup (20 issues) by @thedotmack in #400
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.4.3...v7.4.4
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.4.3...v7.4.4
 
 ## [7.4.3] - 2025-12-20
 
@@ -3850,7 +3850,7 @@ Set `DISCORD_UPDATES_WEBHOOK` in your `.env` file to enable release notification
 Patch release v7.4.2
 
 ## Changes
-- Refactored worker commands from npm scripts to claude-mem CLI
+- Refactored worker commands from npm scripts to opencode-mem CLI
 - Added path alias script
 - Fixed Windows worker stop/restart reliability (#395)
 - Simplified build commands section in CLAUDE.md
@@ -3927,7 +3927,7 @@ This patch release includes comprehensive improvements for Windows platform stab
 
 This represents a major reliability improvement for Windows users, eliminating common issues with worker startup failures, orphaned processes, and zombie sockets.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.3.6...v7.3.7
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.3.6...v7.3.7
 
 ## [7.3.6] - 2025-12-17
 
@@ -3938,13 +3938,13 @@ This represents a major reliability improvement for Windows users, eliminating c
 ## [7.3.5] - 2025-12-17
 
 ## What's Changed
-* fix(windows): solve zombie port problem with wrapper architecture by @ToxMox in https://github.com/thedotmack/claude-mem/pull/372
-* chore: bump version to 7.3.5 by @thedotmack in https://github.com/thedotmack/claude-mem/pull/375
+* fix(windows): solve zombie port problem with wrapper architecture by @ToxMox in https://github.com/kykiles/opencode-mem/pull/372
+* chore: bump version to 7.3.5 by @thedotmack in https://github.com/kykiles/opencode-mem/pull/375
 
 ## New Contributors
-* @ToxMox made their first contribution in https://github.com/thedotmack/claude-mem/pull/372
+* @ToxMox made their first contribution in https://github.com/kykiles/opencode-mem/pull/372
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.3.4...v7.3.5
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.3.4...v7.3.5
 
 ## [7.3.4] - 2025-12-17
 
@@ -3956,13 +3956,13 @@ Patch release for bug fixes and minor improvements
 
 - Remove all better-sqlite3 references from codebase (#357)
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.3.2...v7.3.3
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.3.2...v7.3.3
 
 ## [7.3.2] - 2025-12-16
 
 ## 🪟 Windows Console Fix
 
-Fixes blank console windows appearing for Windows 11 users during claude-mem operations.
+Fixes blank console windows appearing for Windows 11 users during opencode-mem operations.
 
 ### What Changed
 
@@ -3992,7 +3992,7 @@ None - fully backward compatible.
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.3.1...v7.3.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.3.1...v7.3.2
 
 ## [7.3.1] - 2025-12-16
 
@@ -4030,7 +4030,7 @@ Fixed unbounded database growth in the `pending_messages` table by implementing 
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.3.0...v7.3.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.3.0...v7.3.1
 
 ## [7.3.0] - 2025-12-16
 
@@ -4044,7 +4044,7 @@ Fixed unbounded database growth in the `pending_messages` table by implementing 
 ## Changes
 
 - **Default model upgrade**: Changed default model from Haiku to Sonnet for better observation quality
-- **Removed fake URIs**: Replaced claude-mem:// pseudo-protocol with actual HTTP API endpoints for citations
+- **Removed fake URIs**: Replaced opencode-mem:// pseudo-protocol with actual HTTP API endpoints for citations
 
 ## Bug Fixes
 
@@ -4052,7 +4052,7 @@ Fixed unbounded database growth in the `pending_messages` table by implementing 
 - Fixed skillPath variable scoping bug in instructions endpoint
 - Extracted magic numbers to named constants for better code maintainability
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.2.4...v7.3.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.2.4...v7.3.0
 
 ## [7.2.4] - 2025-12-15
 
@@ -4061,7 +4061,7 @@ Fixed unbounded database growth in the `pending_messages` table by implementing 
 ### Documentation
 - Updated endless mode setup instructions with improved configuration guidance for better user experience
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.2.3...v7.2.4
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.2.3...v7.2.4
 
 ## [7.2.3] - 2025-12-15
 
@@ -4119,15 +4119,15 @@ None - fully backward compatible.
 
 ```bash
 # Update via npm
-npm install -g claude-mem@7.2.1
+npm install -g opencode-mem@7.2.1
 
 # Or reinstall plugin
-claude plugin install thedotmack/claude-mem
+claude plugin install kykiles/opencode-mem
 ```
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.2.0...v7.2.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.2.0...v7.2.1
 
 ## [7.2.0] - 2025-12-14
 
@@ -4140,7 +4140,7 @@ Added comprehensive bug report tool that streamlines issue reporting with AI ass
 - **Command**: `npm run bug-report`
 - **🌎 Multi-language Support**: Write in ANY language, auto-translates to English
 - **📊 Smart Diagnostics**: Automatically collects:
-  - Version information (claude-mem, Claude Code, Node.js, Bun)
+  - Version information (opencode-mem, Claude Code, Node.js, Bun)
   - Platform details (OS, version, architecture)
   - Worker status (running state, PID, port, uptime, stats)
   - Last 50 lines of logs (worker + silent debug)
@@ -4192,7 +4192,7 @@ npm run bug-report --help       # Show help
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.15...v7.2.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.15...v7.2.0
 
 ## [7.1.15] - 2025-12-14
 
@@ -4224,7 +4224,7 @@ Related: PR #310
 
 ## Enhanced Error Handling & Logging
 
-This patch release improves error message quality and logging across the claude-mem system.
+This patch release improves error message quality and logging across the opencode-mem system.
 
 ### Error Message Improvements
 
@@ -4275,13 +4275,13 @@ Added comprehensive test suites:
 * Timezone-aware logging for worker service and CLI
 * Complete build with all plugin files included
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.12...v7.1.14
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.12...v7.1.14
 
 ## [7.1.13] - 2025-12-14
 
 ## Enhanced Error Handling & Logging
 
-This patch release improves error message quality and logging across the claude-mem system.
+This patch release improves error message quality and logging across the opencode-mem system.
 
 ### Error Message Improvements
 
@@ -4330,13 +4330,13 @@ Added comprehensive test suites:
 * Standardize and enhance error handling across hooks and worker service by @thedotmack in #295
 * Timezone-aware logging for worker service
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.12...v7.1.13
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.12...v7.1.13
 
 ## [7.1.12] - 2025-12-14
 
 ## What's Fixed
 
-- **Fix data directory creation**: Ensure `~/.claude-mem/` directory exists before writing PM2 migration marker file
+- **Fix data directory creation**: Ensure `~/.opencode-mem/` directory exists before writing PM2 migration marker file
   - Fixes ENOENT errors on first-time installation (issue #259)
   - Adds `mkdirSync(dataDir, { recursive: true })` in `startWorker()` before marker file write
   - Resolves Windows installation failures introduced in f923c0c and exposed in 5d4e71d
@@ -4346,7 +4346,7 @@ Added comprehensive test suites:
 - Added directory creation check in `src/shared/worker-utils.ts`
 - All 52 tests passing
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.11...v7.1.12
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.11...v7.1.12
 
 ## [7.1.11] - 2025-12-14
 
@@ -4366,7 +4366,7 @@ Hooks are compiled to standard JavaScript and work perfectly with Node. The bun-
 **Fixes:**
 - Fish shell compatibility issue (#264)
 
-**Full Changelog:** https://github.com/thedotmack/claude-mem/compare/v7.1.10...v7.1.11
+**Full Changelog:** https://github.com/kykiles/opencode-mem/compare/v7.1.10...v7.1.11
 
 ## [7.1.10] - 2025-12-14
 
@@ -4402,7 +4402,7 @@ Upgrade from v7.1.9 to get automatic orphan cleanup. Combined with v7.1.9's prop
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.9...v7.1.10
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.9...v7.1.10
 
 ## [7.1.9] - 2025-12-14
 
@@ -4431,7 +4431,7 @@ This patch release fixes a critical memory leak that caused chroma-mcp processes
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.8...v7.1.9
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.8...v7.1.9
 
 ## [7.1.8] - 2025-12-13
 
@@ -4448,15 +4448,15 @@ Added portable memory export and import functionality with automatic duplicate p
 - Share memory sets between developers working on the same project
 - Backup and restore specific project memories
 - Collaborate on domain knowledge across teams
-- Migrate memories between different claude-mem installations
+- Migrate memories between different opencode-mem installations
 
 ### Example Usage
 ```bash
 # Export Windows-related memories
 npx tsx scripts/export-memories.ts "windows" windows-work.json
 
-# Export only claude-mem project memories
-npx tsx scripts/export-memories.ts "bugfix" fixes.json --project=claude-mem
+# Export only opencode-mem project memories
+npx tsx scripts/export-memories.ts "bugfix" fixes.json --project=opencode-mem
 
 # Import memories (with automatic duplicate prevention)
 npx tsx scripts/import-memories.ts windows-work.json
@@ -4476,7 +4476,7 @@ npx tsx scripts/import-memories.ts windows-work.json
 ## Known Issue
 - On Windows, a console window may briefly appear when the worker starts (cosmetic only, does not affect functionality)
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.6...v7.1.7
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.6...v7.1.7
 
 ## [7.1.6] - 2025-12-13
 
@@ -4484,7 +4484,7 @@ npx tsx scripts/import-memories.ts windows-work.json
 
 Improved error messages with platform-specific worker restart instructions for better troubleshooting experience.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.5...v7.1.6
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.5...v7.1.6
 
 ## [7.1.5] - 2025-12-13
 
@@ -4495,7 +4495,7 @@ Improved error messages with platform-specific worker restart instructions for b
 ### Bug Fix
 Fixes Windows IPv6 issue where `localhost` resolves to `::1` (IPv6) but worker binds to `127.0.0.1` (IPv4), causing MCP tool connections to fail.
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.4...v7.1.5
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.4...v7.1.5
 
 ## [7.1.4] - 2025-12-13
 
@@ -4503,7 +4503,7 @@ Fixes Windows IPv6 issue where `localhost` resolves to `::1` (IPv6) but worker b
 
 * fix: add npm fallback when bun install fails with alias packages (#265)
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.3...v7.1.4
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.3...v7.1.4
 
 ## [7.1.3] - 2025-12-13
 
@@ -4538,7 +4538,7 @@ This refactoring reduces code duplication and makes the installation process mor
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.1.1...v7.1.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.1.1...v7.1.2
 
 ## [7.1.1] - 2025-12-13
 
@@ -4568,8 +4568,8 @@ This refactoring reduces code duplication and makes the installation process mor
 
 ## 🔗 Links
 
-- [Full Changelog](https://github.com/thedotmack/claude-mem/blob/main/CHANGELOG.md#711---2025-12-12)
-- [Documentation](https://docs.claude-mem.ai)
+- [Full Changelog](https://github.com/kykiles/opencode-mem/blob/main/CHANGELOG.md#711---2025-12-12)
+- [Documentation](https://docs.opencode-mem.ai)
 
 ## [7.1.0] - 2025-12-13
 
@@ -4640,7 +4640,7 @@ Added filtering logic in SessionRoutes.ts to detect and skip file operations on 
 - Improved type safety across all hook input interfaces
 
 ### New Features
-- Added `CLAUDE_MEM_SKIP_TOOLS` configuration setting for controlling which tools are excluded from observations
+- Added `OPENCODE_MEM_SKIP_TOOLS` configuration setting for controlling which tools are excluded from observations
 - Default skip tools: `ListMcpResourcesTool`, `SlashCommand`, `Skill`, `TodoWrite`, `AskUserQuestion`
 
 ### Technical Improvements
@@ -4649,7 +4649,7 @@ Added filtering logic in SessionRoutes.ts to detect and skip file operations on 
 - Enhanced error handling and spinner management
 - Removed dead code and unnecessary abstractions
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.0.6...v7.0.7
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.0.6...v7.0.7
 
 ## [7.0.6] - 2025-12-10
 
@@ -4679,7 +4679,7 @@ Thanks to @CrystallDEV for this contribution!
 - Refactored HTTP-only new-hook implementation
 - Cross-platform worker service improvements
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.0.4...v7.0.5
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.0.4...v7.0.5
 
 ## [7.0.4] - 2025-12-09
 
@@ -4691,7 +4691,7 @@ Thanks to @CrystallDEV for this contribution!
 
 Thanks to @kat-bell for the excellent contributions!
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.0.3...v7.0.4
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.0.3...v7.0.4
 
 ## [7.0.3] - 2025-12-09
 
@@ -4703,7 +4703,7 @@ Thanks to @kat-bell for the excellent contributions!
 - Updated debug log messages to use `[mcp-server]` prefix
 - Removed legacy `search-server.cjs` file
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.0.2...v7.0.3
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.0.2...v7.0.3
 
 ## [7.0.2] - 2025-12-09
 
@@ -4712,7 +4712,7 @@ Thanks to @kat-bell for the excellent contributions!
 **Bug Fixes:**
 - Improved auto-start worker functionality for better reliability
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v7.0.1...v7.0.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v7.0.1...v7.0.2
 
 ## [7.0.1] - 2025-12-09
 
@@ -4736,7 +4736,7 @@ This ensures more reliable worker startup and clearer error messages when the wo
 
 # Major Architectural Refactor
 
-This major release represents a complete architectural transformation of claude-mem from a monolithic design to a clean, modular HTTP-based architecture.
+This major release represents a complete architectural transformation of opencode-mem from a monolithic design to a clean, modular HTTP-based architecture.
 
 ## Breaking Changes
 
@@ -4791,7 +4791,7 @@ This major release represents a complete architectural transformation of claude-
 
 ## Migration Notes
 
-No migration required! Update and continue using claude-mem as before.
+No migration required! Update and continue using opencode-mem as before.
 
 ## [6.5.3] - 2025-12-05
 
@@ -4855,7 +4855,7 @@ This release brings comprehensive documentation updates to reflect all features 
 
 ---
 
-📚 Full documentation available at [docs.claude-mem.ai](https://docs.claude-mem.ai)
+📚 Full documentation available at [docs.opencode-mem.ai](https://docs.opencode-mem.ai)
 
 ## [6.4.9] - 2025-12-02
 
@@ -4897,7 +4897,7 @@ All settings have sensible defaults and are fully backwards compatible.
 
 ## [6.4.1] - 2025-12-01
 
-## Hey there, claude-mem community! 👋
+## Hey there, opencode-mem community! 👋
 
 We're doing something new and exciting: **our first-ever Live AMA**! 
 
@@ -4906,7 +4906,7 @@ We're doing something new and exciting: **our first-ever Live AMA**!
 **December 1st-5th, 2025**  
 **Daily from 5-7pm EST**
 
-During these times, you'll see a live indicator (🔴) when you start a new session, letting you know we're available right now to answer questions, discuss ideas, or just chat about what you're building with claude-mem.
+During these times, you'll see a live indicator (🔴) when you start a new session, letting you know we're available right now to answer questions, discuss ideas, or just chat about what you're building with opencode-mem.
 
 ### What Changed in This Release
 
@@ -4918,7 +4918,7 @@ We've added a smart announcement system that:
 ### Why We're Doing This
 
 We want to hear from **you**! Whether you're:
-- Just getting started with claude-mem
+- Just getting started with opencode-mem
 - A power user with feature ideas
 - Curious about how memory compression works
 - Running into any issues
@@ -4958,7 +4958,7 @@ This release introduces a powerful **dual-tag privacy system** that gives you fi
 
 ### Dual-Tag Privacy System
 - **`<private>` tags**: User-level privacy control - wrap any sensitive content to prevent storage in observation history
-- **`<claude-mem-context>` tags**: System-level tags for auto-injected observations to prevent recursive storage
+- **`<opencode-mem-context>` tags**: System-level tags for auto-injected observations to prevent recursive storage
 - Tag stripping happens at the hook layer (edge processing) before data reaches worker/database
 - Comprehensive documentation in `docs/public/usage/private-tags.mdx`
 
@@ -5042,7 +5042,7 @@ This release fixes a critical issue where upgrading Node.js (e.g., v22 → v25) 
 - Sidebar toggles via hamburger menu on mobile
 - Both buttons positioned in header for consistent UX
 
-Full changelog: https://github.com/thedotmack/claude-mem/compare/v6.3.4...v6.3.5
+Full changelog: https://github.com/kykiles/opencode-mem/compare/v6.3.4...v6.3.5
 
 ## [6.3.4] - 2025-11-30
 
@@ -5071,7 +5071,7 @@ Bug fixes and improvements to timeline context feature:
 - Exported filterTimelineByDepth function for unit testing
 - Fixed type breakdown display in timeline item count
 
-Full changes: https://github.com/thedotmack/claude-mem/compare/v6.3.2...v6.3.3
+Full changes: https://github.com/kykiles/opencode-mem/compare/v6.3.2...v6.3.3
 
 ## [6.3.2] - 2025-11-25
 
@@ -5124,7 +5124,7 @@ To update, restart Claude Code or run the plugin installer.
 
 **Problem:**
 - Observations and summaries created with empty project names
-- Context-hook couldn't find recent context (queries `WHERE project = 'claude-mem'`)
+- Context-hook couldn't find recent context (queries `WHERE project = 'opencode-mem'`)
 - Users saw no observations or summaries in SessionStart since Nov 22
 
 **Root Causes:**
@@ -5199,9 +5199,9 @@ npm run sync-marketplace
 ## Bug Fixes
 
 ### Dynamic Project Name Detection (#142)
-- Fixed hardcoded "claude-mem" project name in ChromaSync and search-server
+- Fixed hardcoded "opencode-mem" project name in ChromaSync and search-server
 - Now uses `getCurrentProjectName()` to dynamically detect the project based on working directory
-- Resolves #140 where all observations were incorrectly tagged with "claude-mem"
+- Resolves #140 where all observations were incorrectly tagged with "opencode-mem"
 
 ### Viewer UI Scrolling
 - Simplified overflow CSS to enable proper scrolling in viewer UI
@@ -5236,7 +5236,7 @@ Makes the viewer usable on phones and narrow browser windows.
 Added a real-time queue depth indicator to the viewer UI that displays the count of active work items (queued + currently processing).
 
 ### Features
-- Visual badge next to claude-mem logo
+- Visual badge next to opencode-mem logo
 - Shows count of pending messages + active SDK generators
 - Only displays when queueDepth > 0
 - Subtle pulse animation for visual feedback
@@ -5278,7 +5278,7 @@ Users will no longer experience issues with the worker starting from the wrong l
 
 ### Verification
 
-Run `pm2 info claude-mem-worker` to verify:
+Run `pm2 info opencode-mem-worker` to verify:
 - **exec cwd** should be: `/Users/[username]/.claude/plugins/marketplaces/thedotmack`
 - **script path** should be: `/Users/[username]/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs`
 
@@ -5286,7 +5286,7 @@ Run `pm2 info claude-mem-worker` to verify:
 
 ## Critical Hotfix: Database Migration Issue (#121)
 
-This is an emergency hotfix addressing a critical database migration bug that prevented claude-mem from loading for some users.
+This is an emergency hotfix addressing a critical database migration bug that prevented opencode-mem from loading for some users.
 
 ### What was fixed
 
@@ -5305,12 +5305,12 @@ This is an emergency hotfix addressing a critical database migration bug that pr
 
 Option 1 - Manual fix (preserves history):
 ```bash
-sqlite3 ~/.claude-mem/claude-mem.db "ALTER TABLE observations ADD COLUMN discovery_tokens INTEGER DEFAULT 0; ALTER TABLE session_summaries ADD COLUMN discovery_tokens INTEGER DEFAULT 0;"
+sqlite3 ~/.opencode-mem/opencode-mem.db "ALTER TABLE observations ADD COLUMN discovery_tokens INTEGER DEFAULT 0; ALTER TABLE session_summaries ADD COLUMN discovery_tokens INTEGER DEFAULT 0;"
 ```
 
 Option 2 - Delete and recreate (loses history):
 ```bash
-rm ~/.claude-mem/claude-mem.db
+rm ~/.opencode-mem/opencode-mem.db
 # Restart Claude Code - database will recreate with correct schema
 ```
 
@@ -5324,7 +5324,7 @@ Just upgrade to v6.0.7 and the migration will work correctly.
 
 ### Full Changelog
 
-See [CHANGELOG.md](https://github.com/thedotmack/claude-mem/blob/main/CHANGELOG.md) for complete version history.
+See [CHANGELOG.md](https://github.com/kykiles/opencode-mem/blob/main/CHANGELOG.md) for complete version history.
 
 ---
 
@@ -5385,7 +5385,7 @@ Fixes memory leaks from orphaned uvx/python processes that could accumulate duri
 - Fixed process cleanup in ChromaDB sync operations to prevent orphaned processes
 - Improved resource management for external process spawning
 
-**Full Changelog:** https://github.com/thedotmack/claude-mem/compare/v6.0.3...v6.0.4
+**Full Changelog:** https://github.com/kykiles/opencode-mem/compare/v6.0.3...v6.0.4
 
 ## [6.0.3] - 2025-11-16
 
@@ -5398,7 +5398,7 @@ Documentation alignment release - merged PR #116 fixing hybrid search architectu
 - Updated technical architecture documentation to reflect hybrid ChromaDB + SQLite + timeline context flow
 - Fixed skill operation guides to accurately describe semantic search capabilities
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v6.0.2...v6.0.3
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v6.0.2...v6.0.3
 
 ## [6.0.2] - 2025-11-14
 
@@ -5409,7 +5409,7 @@ Documentation alignment release - merged PR #116 fixing hybrid search architectu
 ## What's Changed
 - Enhanced startup context messaging with community connection information
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v6.0.1...v6.0.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v6.0.1...v6.0.2
 
 ## [6.0.1] - 2025-11-14
 
@@ -5427,7 +5427,7 @@ Documentation alignment release - merged PR #116 fixing hybrid search architectu
 - Improved card type differentiation: gold/amber for summaries, purple for prompts, blue/teal for observations
 - Better visual consistency in viewer UI
 
-Full changelog: https://github.com/thedotmack/claude-mem/compare/v6.0.0...v6.0.1
+Full changelog: https://github.com/kykiles/opencode-mem/compare/v6.0.0...v6.0.1
 
 ## [6.0.0] - 2025-11-13
 
@@ -5465,7 +5465,7 @@ This is a major version bump due to significant architectural changes in session
 ---
 
 📦 Install via Claude Code: `~/.claude/plugins/marketplaces/thedotmack/`
-📖 Documentation: [CLAUDE.md](https://github.com/thedotmack/claude-mem/blob/main/CLAUDE.md)
+📖 Documentation: [CLAUDE.md](https://github.com/kykiles/opencode-mem/blob/main/CLAUDE.md)
 
 ## [5.5.1] - 2025-11-11
 
@@ -5625,7 +5625,7 @@ Merged via PR #86
 
 ```bash
 # Update to latest version
-/plugin update claude-mem
+/plugin update opencode-mem
 ```
 
 Or restart Claude Code to auto-update.
@@ -5638,7 +5638,7 @@ Or restart Claude Code to auto-update.
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v5.4.1...v5.4.2
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v5.4.1...v5.4.2
 
 ## [5.4.1] - 2025-11-10
 
@@ -5718,7 +5718,7 @@ Or restart Claude Code to auto-update.
 ### 🗑️ Removed
 
 **MCP Search Server** (deprecated):
-- Removed `claude-mem-search` from plugin/.mcp.json
+- Removed `opencode-mem-search` from plugin/.mcp.json
 - Build script no longer compiles search-server.mjs
 - Source file kept for reference: src/servers/search-server.ts
 - All 9 MCP tools replaced by equivalent HTTP API endpoints
@@ -5765,21 +5765,21 @@ Or restart Claude Code to auto-update.
 ### 📦 Installation
 
 ```bash
-/plugin marketplace add thedotmack/claude-mem
-/plugin install claude-mem
+/plugin marketplace add kykiles/opencode-mem
+/plugin install opencode-mem
 ```
 
 Restart Claude Code to start using v5.4.0.
 
 ### 🔗 Resources
 
-- **Documentation**: https://github.com/thedotmack/claude-mem/tree/main/docs
-- **Issues**: https://github.com/thedotmack/claude-mem/issues
-- **CHANGELOG**: https://github.com/thedotmack/claude-mem/blob/main/CHANGELOG.md
+- **Documentation**: https://github.com/kykiles/opencode-mem/tree/main/docs
+- **Issues**: https://github.com/kykiles/opencode-mem/issues
+- **CHANGELOG**: https://github.com/kykiles/opencode-mem/blob/main/CHANGELOG.md
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v5.3.0...v5.4.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v5.3.0...v5.4.0
 
 ## [5.3.0] - 2025-11-09
 
@@ -5818,7 +5818,7 @@ Restart Claude Code to start using v5.4.0.
 **Breaking Changes**: None (patch version)
 
 **Improvements**:
-- Added troubleshooting slash command skill for diagnosing claude-mem installation issues
+- Added troubleshooting slash command skill for diagnosing opencode-mem installation issues
 - Comprehensive diagnostic workflow covering PM2, worker health, database, dependencies, logs, and viewer UI
 - Automated fix sequences and common issue resolutions
 - Full system diagnostic report generation
@@ -5829,7 +5829,7 @@ Restart Claude Code to start using v5.4.0.
 - Version bumped to 5.2.3 across all metadata files
 
 **Usage**:
-Run `/skill troubleshoot` or invoke the `troubleshoot` skill to diagnose claude-mem issues.
+Run `/skill troubleshoot` or invoke the `troubleshoot` skill to diagnose opencode-mem issues.
 
 The skill provides systematic checks for:
 - PM2 worker status
@@ -6202,7 +6202,7 @@ Updated CLAUDE.md with:
 
 ### 🚀 Getting Started
 
-1. Update claude-mem to v5.1.0
+1. Update opencode-mem to v5.1.0
 2. Start a Claude Code session (worker auto-starts)
 3. Open http://localhost:37777 in your browser
 4. Watch your memory stream in real-time!
@@ -6236,7 +6236,7 @@ Built with:
 
 **Breaking Changes**: None (backward compatible MINOR version)
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v5.0.3...v5.1.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v5.0.3...v5.1.0
 
 ## [5.0.3] - 2025-11-05
 
@@ -6291,12 +6291,12 @@ This release should completely resolve installation issues. The smart installer 
 
 Install via Claude Code marketplace:
 ```bash
-/plugin marketplace add https://raw.githubusercontent.com/thedotmack/claude-mem/main/.claude-plugin/marketplace.json
-/plugin install claude-mem
+/plugin marketplace add https://raw.githubusercontent.com/kykiles/opencode-mem/main/.claude-plugin/marketplace.json
+/plugin install opencode-mem
 ```
 
 ## Full Changelog
-[View all changes](https://github.com/thedotmack/claude-mem/compare/v5.0.1...v5.0.2)
+[View all changes](https://github.com/kykiles/opencode-mem/compare/v5.0.1...v5.0.2)
 
 ## [5.0.1] - 2025-11-04
 
@@ -6328,7 +6328,7 @@ Install via Claude Code marketplace:
 
 ---
 
-**Installation**: See [README](https://github.com/thedotmack/claude-mem#readme) for installation instructions.
+**Installation**: See [README](https://github.com/kykiles/opencode-mem#readme) for installation instructions.
 
 ## [5.0.0] - 2025-11-04
 
@@ -6469,17 +6469,17 @@ None (patch version)
 
 ---
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v4.3.0...v4.3.1
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v4.3.0...v4.3.1
 
 ## [4.3.0] - 2025-10-25
 
 ## What's Changed
-* feat: Enhanced context hook with session observations and cross-platform improvements by @thedotmack in https://github.com/thedotmack/claude-mem/pull/25
+* feat: Enhanced context hook with session observations and cross-platform improvements by @thedotmack in https://github.com/kykiles/opencode-mem/pull/25
 
 ## New Contributors
-* @thedotmack made their first contribution in https://github.com/thedotmack/claude-mem/pull/25
+* @thedotmack made their first contribution in https://github.com/kykiles/opencode-mem/pull/25
 
-**Full Changelog**: https://github.com/thedotmack/claude-mem/compare/v4.2.11...v4.3.0
+**Full Changelog**: https://github.com/kykiles/opencode-mem/compare/v4.2.11...v4.3.0
 
 ## [4.2.10] - 2025-10-25
 
@@ -6519,15 +6519,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.16
+npm install -g opencode-mem@3.9.16
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.9.14] - 2025-10-04
 
@@ -6537,15 +6537,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.14
+npm install -g opencode-mem@3.9.14
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.9.13] - 2025-10-04
 
@@ -6555,15 +6555,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.13
+npm install -g opencode-mem@3.9.13
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.9.12] - 2025-10-04
 
@@ -6573,15 +6573,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.12
+npm install -g opencode-mem@3.9.12
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.9.11] - 2025-10-04
 
@@ -6591,15 +6591,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.11
+npm install -g opencode-mem@3.9.11
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.9.10] - 2025-10-03
 
@@ -6609,15 +6609,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.10
+npm install -g opencode-mem@3.9.10
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.9.9] - 2025-10-03
 
@@ -6627,15 +6627,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.9.9
+npm install -g opencode-mem@3.9.9
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.7.2] - 2025-09-22
 
@@ -6645,15 +6645,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.7.2
+npm install -g opencode-mem@3.7.2
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.7.1] - 2025-09-18
 
@@ -6663,15 +6663,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.7.1
+npm install -g opencode-mem@3.7.1
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.7.0] - 2025-09-18
 
@@ -6681,15 +6681,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.7.0
+npm install -g opencode-mem@3.7.0
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.10] - 2025-09-17
 
@@ -6699,15 +6699,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.10
+npm install -g opencode-mem@3.6.10
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.9] - 2025-09-15
 
@@ -6717,15 +6717,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.9
+npm install -g opencode-mem@3.6.9
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.8] - 2025-09-14
 
@@ -6735,15 +6735,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.8
+npm install -g opencode-mem@3.6.8
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.6] - 2025-09-14
 
@@ -6753,15 +6753,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.6
+npm install -g opencode-mem@3.6.6
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.5] - 2025-09-14
 
@@ -6771,15 +6771,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.5
+npm install -g opencode-mem@3.6.5
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.4] - 2025-09-14
 
@@ -6789,15 +6789,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.4
+npm install -g opencode-mem@3.6.4
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.3] - 2025-09-11
 
@@ -6807,15 +6807,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.3
+npm install -g opencode-mem@3.6.3
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.2] - 2025-09-11
 
@@ -6825,15 +6825,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.2
+npm install -g opencode-mem@3.6.2
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.1] - 2025-09-10
 
@@ -6843,15 +6843,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.1
+npm install -g opencode-mem@3.6.1
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.6.0] - 2025-09-10
 
@@ -6861,15 +6861,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.6.0
+npm install -g opencode-mem@3.6.0
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.5.9] - 2025-09-10
 
@@ -6879,15 +6879,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.5.9
+npm install -g opencode-mem@3.5.9
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.5.8] - 2025-09-10
 
@@ -6897,15 +6897,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.5.8
+npm install -g opencode-mem@3.5.8
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.5.7] - 2025-09-10
 
@@ -6915,15 +6915,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.5.7
+npm install -g opencode-mem@3.5.7
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.5.6] - 2025-09-09
 
@@ -6933,15 +6933,15 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.5.6
+npm install -g opencode-mem@3.5.6
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.5.5] - 2025-09-09
 
@@ -6951,24 +6951,24 @@ This release includes the latest updates from the npm package.
 
 ### Installation
 ```bash
-npm install -g claude-mem@3.5.5
+npm install -g opencode-mem@3.5.5
 ```
 
 ### Quick Start
 ```bash
-claude-mem install
+opencode-mem install
 ```
 
-For full documentation, visit the [README](https://github.com/thedotmack/claude-mem#readme).
+For full documentation, visit the [README](https://github.com/kykiles/opencode-mem#readme).
 
 ## [3.5.4] - 2025-09-09
 
-## 🎉 claude-mem v3.5.4
+## 🎉 opencode-mem v3.5.4
 
 ### Installation
 ```bash
-npm install -g claude-mem
-claude-mem install
+npm install -g opencode-mem
+opencode-mem install
 ```
 
 ### What's New
@@ -6986,7 +6986,7 @@ claude-mem install
 - 🔍 **Powerful Search** - Vector-based semantic search across all memories
 
 ### Files Included
-- `dist/claude-mem.min.js` - Minified CLI executable
+- `dist/opencode-mem.min.js` - Minified CLI executable
 - `hooks/` - Claude Code integration hooks
 - `commands/` - Claude Code custom commands
 - `package.json` - Package configuration
@@ -6996,4 +6996,4 @@ claude-mem install
 - Claude Code CLI
 - uv (automatically installed if missing)
 
-For documentation and support, visit the [GitHub repository](https://github.com/thedotmack/claude-mem).
+For documentation and support, visit the [GitHub repository](https://github.com/kykiles/opencode-mem).

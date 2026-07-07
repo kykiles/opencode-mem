@@ -2,11 +2,11 @@
 
 <h1 align="center">
   <br>
-  <a href="https://github.com/thedotmack/claude-mem">
+  <a href="https://github.com/kykiles/opencode-mem">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-dark-mode.webp">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-light-mode.webp">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-light-mode.webp" alt="Claude-Mem" width="400">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-dark-mode.webp">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp">
+      <img src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp" alt="Claude-Mem" width="400">
     </picture>
   </a>
   <br>
@@ -70,9 +70,9 @@
 <p align="center">
   <a href="https://trendshift.io/repositories/15496" target="_blank">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg" alt="thedotmack/claude-mem | Trendshift" width="250" height="55"/>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge.svg">
+      <img src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge.svg" alt="kykiles/opencode-mem | Trendshift" width="250" height="55"/>
     </picture>
   </a>
 </p>
@@ -82,10 +82,10 @@
 <table align="center">
   <tr>
     <td align="center">
-      <a href="https://github.com/thedotmack/claude-mem">
+      <a href="https://github.com/kykiles/opencode-mem">
         <picture>
           <img
-            src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/cm-preview.gif"
+            src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/cm-preview.gif"
             alt="Claude-Mem Preview"
             width="500"
           >
@@ -93,19 +93,19 @@
       </a>
     </td>
     <td align="center">
-      <a href="https://www.star-history.com/#thedotmack/claude-mem&Date">
+      <a href="https://www.star-history.com/#kykiles/opencode-mem&Date">
         <picture>
           <source
             media="(prefers-color-scheme: dark)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&theme=dark&legend=top-left"
+            srcset="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&theme=dark&legend=top-left"
           />
           <source
             media="(prefers-color-scheme: light)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
+            srcset="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&legend=top-left"
           />
           <img
             alt="Star History Chart"
-            src="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
+            src="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&legend=top-left"
             width="500"
           />
         </picture>
@@ -135,42 +135,42 @@
 Installera med ett enda kommando:
 
 ```bash
-npx claude-mem install
+npx opencode-mem install
 ```
 
 Eller installera för OpenCode:
 
 ```bash
-npx claude-mem install --ide opencode
+npx opencode-mem install --ide opencode
 ```
 
-Eller installera för Antigravity CLI ([installationsguide](https://docs.claude-mem.ai/antigravity-cli/setup)):
+Eller installera för Antigravity CLI ([installationsguide](https://docs.opencode-mem.ai/antigravity-cli/setup)):
 
 ```bash
-npx claude-mem install --ide antigravity
+npx opencode-mem install --ide antigravity
 ```
 
 Eller installera från plugin-marknadsplatsen inuti Claude Code:
 
 ```bash
-/plugin marketplace add thedotmack/claude-mem
+/plugin marketplace add kykiles/opencode-mem
 
-/plugin install claude-mem
+/plugin install opencode-mem
 ```
 
 Starta om Claude Code. Kontext från tidigare sessioner kommer automatiskt att visas i nya sessioner.
 
-> **Obs:** Claude-Mem publiceras även på npm, men `npm install -g claude-mem` installerar **endast SDK:t/biblioteket** — det registrerar inte plugin-krokarna och konfigurerar inte worker-tjänsten. Installera alltid via `npx claude-mem install` eller `/plugin`-kommandona ovan.
+> **Obs:** Claude-Mem publiceras även på npm, men `npm install -g opencode-mem` installerar **endast SDK:t/biblioteket** — det registrerar inte plugin-krokarna och konfigurerar inte worker-tjänsten. Installera alltid via `npx opencode-mem install` eller `/plugin`-kommandona ovan.
 
 ### 🦞 OpenClaw Gateway
 
-Installera claude-mem som en persistent minnesplugin på [OpenClaw](https://openclaw.ai)-gateways med ett enda kommando:
+Installera opencode-mem som en persistent minnesplugin på [OpenClaw](https://openclaw.ai)-gateways med ett enda kommando:
 
 ```bash
 curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 ```
 
-Installationsprogrammet hanterar beroenden, plugin-konfiguration, konfiguration av AI-leverantör, uppstart av worker samt valfria realtidsobservationsflöden till Telegram, Discord, Slack med flera. Se [OpenClaw-integrationsguiden](https://docs.claude-mem.ai/openclaw-integration) för mer information.
+Installationsprogrammet hanterar beroenden, plugin-konfiguration, konfiguration av AI-leverantör, uppstart av worker samt valfria realtidsobservationsflöden till Telegram, Discord, Slack med flera. Se [OpenClaw-integrationsguiden](https://docs.opencode-mem.ai/openclaw-integration) för mer information.
 
 **Nyckelfunktioner:**
 
@@ -188,35 +188,35 @@ Installationsprogrammet hanterar beroenden, plugin-konfiguration, konfiguration 
 
 ## Dokumentation
 
-📚 **[Visa fullständig dokumentation](https://docs.claude-mem.ai/)** - Bläddra på den officiella webbplatsen
+📚 **[Visa fullständig dokumentation](https://docs.opencode-mem.ai/)** - Bläddra på den officiella webbplatsen
 
 ### Komma igång
 
-- **[Installationsguide](https://docs.claude-mem.ai/installation)** - Snabbstart och avancerad installation
-- **[Användarguide](https://docs.claude-mem.ai/usage/getting-started)** - Hur Claude-Mem fungerar automatiskt
-- **[Sökverktyg](https://docs.claude-mem.ai/usage/search-tools)** - Sök i din projekthistorik med naturligt språk
+- **[Installationsguide](https://docs.opencode-mem.ai/installation)** - Snabbstart och avancerad installation
+- **[Användarguide](https://docs.opencode-mem.ai/usage/getting-started)** - Hur Claude-Mem fungerar automatiskt
+- **[Sökverktyg](https://docs.opencode-mem.ai/usage/search-tools)** - Sök i din projekthistorik med naturligt språk
 
 ### Bästa praxis
 
-- **[Context Engineering](https://docs.claude-mem.ai/context-engineering)** - Optimeringsprinciper för AI-agentkontext
-- **[Progressiv visning](https://docs.claude-mem.ai/progressive-disclosure)** - Filosofin bakom Claude-Mems kontextpriming-strategi
+- **[Context Engineering](https://docs.opencode-mem.ai/context-engineering)** - Optimeringsprinciper för AI-agentkontext
+- **[Progressiv visning](https://docs.opencode-mem.ai/progressive-disclosure)** - Filosofin bakom Claude-Mems kontextpriming-strategi
 
 ### Arkitektur
 
-- **[Översikt](https://docs.claude-mem.ai/architecture/overview)** - Systemkomponenter och dataflöde
-- **[Arkitekturutveckling](https://docs.claude-mem.ai/architecture-evolution)** - Resan från v3 till v5
-- **[Hooks-arkitektur](https://docs.claude-mem.ai/hooks-architecture)** - Hur Claude-Mem använder livscykelkrokar
-- **[Hooks-referens](https://docs.claude-mem.ai/architecture/hooks)** - 7 hook-skript förklarade
-- **[Worker Service](https://docs.claude-mem.ai/architecture/worker-service)** - HTTP API och Bun-hantering
-- **[Databas](https://docs.claude-mem.ai/architecture/database)** - SQLite-schema och FTS5-sökning
-- **[Sökarkitektur](https://docs.claude-mem.ai/architecture/search-architecture)** - Hybridsökning med Chroma-vektordatabas
+- **[Översikt](https://docs.opencode-mem.ai/architecture/overview)** - Systemkomponenter och dataflöde
+- **[Arkitekturutveckling](https://docs.opencode-mem.ai/architecture-evolution)** - Resan från v3 till v5
+- **[Hooks-arkitektur](https://docs.opencode-mem.ai/hooks-architecture)** - Hur Claude-Mem använder livscykelkrokar
+- **[Hooks-referens](https://docs.opencode-mem.ai/architecture/hooks)** - 7 hook-skript förklarade
+- **[Worker Service](https://docs.opencode-mem.ai/architecture/worker-service)** - HTTP API och Bun-hantering
+- **[Databas](https://docs.opencode-mem.ai/architecture/database)** - SQLite-schema och FTS5-sökning
+- **[Sökarkitektur](https://docs.opencode-mem.ai/architecture/search-architecture)** - Hybridsökning med Chroma-vektordatabas
 
 ### Konfiguration och utveckling
 
-- **[Konfiguration](https://docs.claude-mem.ai/configuration)** - Miljövariabler och inställningar
-- **[Utveckling](https://docs.claude-mem.ai/development)** - Bygga, testa, bidra
-- **[Release-grenar](https://docs.claude-mem.ai/branches)** - Flödet mellan stable-, core-dev- och community-edge-grenarna
-- **[Felsökning](https://docs.claude-mem.ai/troubleshooting)** - Vanliga problem och lösningar
+- **[Konfiguration](https://docs.opencode-mem.ai/configuration)** - Miljövariabler och inställningar
+- **[Utveckling](https://docs.opencode-mem.ai/development)** - Bygga, testa, bidra
+- **[Release-grenar](https://docs.opencode-mem.ai/branches)** - Flödet mellan stable-, core-dev- och community-edge-grenarna
+- **[Felsökning](https://docs.opencode-mem.ai/troubleshooting)** - Vanliga problem och lösningar
 
 ---
 
@@ -231,7 +231,7 @@ Installationsprogrammet hanterar beroenden, plugin-konfiguration, konfiguration 
 5. **mem-search-färdighet** - Naturligspråkssökningar med progressiv visning
 6. **Chroma-vektordatabas** - Hybrid semantisk + nyckelordssökning för intelligent kontexthämtning
 
-Se [Arkitekturöversikt](https://docs.claude-mem.ai/architecture/overview) för detaljer.
+Se [Arkitekturöversikt](https://docs.opencode-mem.ai/architecture/overview) för detaljer.
 
 ---
 
@@ -270,7 +270,7 @@ search(query="authentication bug", type="bugfix", limit=10)
 get_observations(ids=[123, 456])
 ```
 
-Se [Sökverktygsguide](https://docs.claude-mem.ai/usage/search-tools) för detaljerade exempel.
+Se [Sökverktygsguide](https://docs.opencode-mem.ai/usage/search-tools) för detaljerade exempel.
 
 ---
 
@@ -278,7 +278,7 @@ Se [Sökverktygsguide](https://docs.claude-mem.ai/usage/search-tools) för detal
 
 Stabila utgåvor levereras från `main` och publiceras till npm. `core-dev` och
 `community-edge` är källkörda grenar för tidiga tillförlitlighetsfixar och
-community-integrationer. Se **[Release-grenar](https://docs.claude-mem.ai/branches)**
+community-integrationer. Se **[Release-grenar](https://docs.opencode-mem.ai/branches)**
 för grenflödet och instruktioner för att köra icke-stabila versioner.
 
 ---
@@ -306,13 +306,13 @@ Se till att Node.js och npm är installerade och tillagda i din PATH. Ladda ner 
 
 ## Konfiguration
 
-Inställningar hanteras i `~/.claude-mem/settings.json` (skapas automatiskt med standardvärden vid första körning). Konfigurera AI-modell, worker-port, datakatalog, loggnivå och inställningar för kontextinjektion.
+Inställningar hanteras i `~/.opencode-mem/settings.json` (skapas automatiskt med standardvärden vid första körning). Konfigurera AI-modell, worker-port, datakatalog, loggnivå och inställningar för kontextinjektion.
 
-Se **[Konfigurationsguide](https://docs.claude-mem.ai/configuration)** för alla tillgängliga inställningar och exempel.
+Se **[Konfigurationsguide](https://docs.opencode-mem.ai/configuration)** för alla tillgängliga inställningar och exempel.
 
 ### Konfiguration av läge och språk
 
-Claude-Mem stöder flera arbetsflödeslägen och språk via inställningen `CLAUDE_MEM_MODE`.
+Claude-Mem stöder flera arbetsflödeslägen och språk via inställningen `OPENCODE_MEM_MODE`.
 
 Detta alternativ styr både:
 - Arbetsflödesbeteendet (t.ex. code, chill, investigation)
@@ -320,11 +320,11 @@ Detta alternativ styr både:
 
 #### Så konfigurerar du det
 
-Redigera din inställningsfil på `~/.claude-mem/settings.json`:
+Redigera din inställningsfil på `~/.opencode-mem/settings.json`:
 
 ```json
 {
-  "CLAUDE_MEM_MODE": "code--zh"
+  "OPENCODE_MEM_MODE": "code--zh"
 }
 ```
 
@@ -353,7 +353,7 @@ Starta om Claude Code för att tillämpa den nya lägeskonfigurationen.
 
 ## Utveckling
 
-Se **[Utvecklingsguide](https://docs.claude-mem.ai/development)** för bygginstruktioner, testning och bidragsarbetsflöde.
+Se **[Utvecklingsguide](https://docs.opencode-mem.ai/development)** för bygginstruktioner, testning och bidragsarbetsflöde.
 
 ---
 
@@ -361,7 +361,7 @@ Se **[Utvecklingsguide](https://docs.claude-mem.ai/development)** för bygginstr
 
 Om du upplever problem, beskriv problemet för Claude så kommer felsökningsfärdigheten automatiskt att diagnostisera och tillhandahålla lösningar.
 
-Se **[Felsökningsguide](https://docs.claude-mem.ai/troubleshooting)** för vanliga problem och lösningar.
+Se **[Felsökningsguide](https://docs.opencode-mem.ai/troubleshooting)** för vanliga problem och lösningar.
 
 ---
 
@@ -386,10 +386,10 @@ Bidrag är välkomna! Vänligen:
 
 Claude-Mem levereras från tre grenar: `main` (stabil), `core-dev` och
 `community-edge`. Endast `main` publiceras till npm; de andra körs från
-källkod. Se [Release-grenar](https://docs.claude-mem.ai/branches) för
+källkod. Se [Release-grenar](https://docs.opencode-mem.ai/branches) för
 strategin och instruktioner för lokal körning.
 
-Se [Utvecklingsguide](https://docs.claude-mem.ai/development) för bidragsarbetsflöde.
+Se [Utvecklingsguide](https://docs.opencode-mem.ai/development) för bidragsarbetsflöde.
 
 ---
 
@@ -412,8 +412,8 @@ mellan öppen och kommersiell användning.
 ## Support
 
 - **Dokumentation**: [docs/](docs/)
-- **Problem**: [GitHub Issues](https://github.com/thedotmack/claude-mem/issues)
-- **Repository**: [github.com/thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)
+- **Problem**: [GitHub Issues](https://github.com/kykiles/opencode-mem/issues)
+- **Repository**: [github.com/kykiles/opencode-mem](https://github.com/kykiles/opencode-mem)
 - **Officiellt X-konto**: [@Claude_Memory](https://x.com/Claude_Memory)
 - **Officiell Discord**: [Gå med i Discord](https://discord.com/invite/J4wttp9vDu)
 - **Författare**: Alex Newman ([@thedotmack](https://github.com/thedotmack))

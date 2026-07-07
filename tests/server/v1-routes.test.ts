@@ -64,7 +64,7 @@ describe('server REST API v1 routes', () => {
   it('creates projects, sessions, events, memories, and searchable context', async () => {
     const projectResponse = await post('/v1/projects', {
       name: 'Claude Mem',
-      rootPath: '/tmp/claude-mem',
+      rootPath: '/tmp/opencode-mem',
     });
     expect(projectResponse.status).toBe(201);
     const { project } = await projectResponse.json();

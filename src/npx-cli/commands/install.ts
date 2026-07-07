@@ -1,17 +1,14 @@
 import * as p from '@clack/prompts';
 import { styleText } from 'node:util';
 import { randomUUID } from 'crypto';
-import { spawnSync } from 'child_process';
 import { loadTelemetryConfig, saveTelemetryConfig } from '../../services/telemetry/consent.js';
 import { captureCliEvent } from '../../services/telemetry/cli-telemetry.js';
-import { buildSpawnSyncInvocation, lookupWindowsCommand, spawnHidden } from '../../shared/spawn.js';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
-import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { SettingsDefaultsManager, type SettingsDefaults } from '../../shared/SettingsDefaultsManager.js';
 import { USER_SETTINGS_PATH } from '../../shared/paths.js';
 import { writeJsonFileAtomic as writeSettingsJsonAtomic } from '../../shared/atomic-json.js';
-import { loadClaudeMemEnv, saveClaudeMemEnv } from '../../shared/EnvManager.js';
+import { loadOpenCodeMemEnv, saveOpenCodeMemEnv } from '../../shared/EnvManager.js';
 import { ensureWorkerStarted, type WorkerStartResult } from '../../services/worker-spawner.js';
 import { formatHostForUrl } from '../../shared/worker-utils.js';
 import {
@@ -50,36 +47,6 @@ function detectInstallMethod(): string {
   if (name === 'npm' || name === 'bun' || name === 'pnpm' || name === 'yarn') return name;
   if (process.versions.bun) return 'bun';
   return 'unknown';
-}
-
-/**
- * Claude Code CLI version, best effort. Hook/plugin behavior differs across
- * Claude Code releases, so this is key for diagnosing installs whose worker
- * never starts. Missing binary or timeout → undefined (dropped by scrubber).
- */
-function readClaudeCodeVersionOutput(): string | undefined {
-  const command = process.platform === 'win32'
-    ? (lookupWindowsCommand('claude') ?? 'claude.cmd')
-    : 'claude';
-  const invocation = buildSpawnSyncInvocation(command, ['--version'], {
-    timeout: 5000,
-    encoding: 'utf-8',
-  });
-  const result = spawnSync(invocation.command, invocation.args, invocation.options);
-  const output = (result.stdout ?? '').trim();
-  if (!output) return undefined;
-  // "2.0.14 (Claude Code)" → "2.0.14"
-  return output.split(/\s+/)[0].slice(0, 40) || undefined;
-}
-
-function detectClaudeCodeVersion(): string | undefined {
-  try {
-    return readClaudeCodeVersionOutput();
-  } catch (error: unknown) {
-    const err = error instanceof Error ? error : new Error(String(error));
-    console.warn('[install] Could not detect Claude Code version:', err);
-    return undefined;
-  }
 }
 
 interface TaskDescriptor {
@@ -145,508 +112,25 @@ const log = {
   warn: (msg: string) => isInteractive ? p.log.warn(msg) : console.warn(`  ${msg}`),
   error: (msg: string) => isInteractive ? p.log.error(msg) : console.error(`  ${msg}`),
 };
+
 import {
-  claudeSettingsPath,
-  ensureDirectoryExists,
-  installedPluginsPath,
-  IS_WINDOWS,
-  knownMarketplacesPath,
   marketplaceDirectory,
   npmPackagePluginDirectory,
   npmPackageRootDirectory,
   pluginCacheDirectory,
-  pluginsDirectory,
   readPluginVersion,
-  writeJsonFileAtomic,
 } from '../utils/paths.js';
-import { readJsonSafe } from '../../utils/json-utils.js';
 import { readFlatSettings } from '../utils/settings.js';
 import { shutdownWorkerAndWait } from '../../services/install/shutdown-helper.js';
 import { detectInstalledIDEs } from './ide-detection.js';
-
-function registerMarketplace(): void {
-  const knownMarketplaces = readJsonSafe<Record<string, any>>(knownMarketplacesPath(), {});
-
-  knownMarketplaces['thedotmack'] = {
-    source: {
-      source: 'github',
-      repo: 'thedotmack/claude-mem',
-    },
-    installLocation: marketplaceDirectory(),
-    lastUpdated: new Date().toISOString(),
-    autoUpdate: true,
-  };
-
-  ensureDirectoryExists(pluginsDirectory());
-  writeJsonFileAtomic(knownMarketplacesPath(), knownMarketplaces);
-}
-
-function registerPlugin(version: string): void {
-  const installedPlugins = readJsonSafe<Record<string, any>>(installedPluginsPath(), {});
-
-  if (!installedPlugins.version) installedPlugins.version = 2;
-  if (!installedPlugins.plugins) installedPlugins.plugins = {};
-
-  const cachePath = pluginCacheDirectory(version);
-  const now = new Date().toISOString();
-
-  installedPlugins.plugins['claude-mem@thedotmack'] = [
-    {
-      scope: 'user',
-      installPath: cachePath,
-      version,
-      installedAt: now,
-      lastUpdated: now,
-    },
-  ];
-
-  writeJsonFileAtomic(installedPluginsPath(), installedPlugins);
-}
-
-function enablePluginInClaudeSettings(): void {
-  const settings = readJsonSafe<Record<string, any>>(claudeSettingsPath(), {});
-
-  if (!settings.enabledPlugins) settings.enabledPlugins = {};
-  settings.enabledPlugins['claude-mem@thedotmack'] = true;
-
-  writeJsonFileAtomic(claudeSettingsPath(), settings);
-}
-
-/**
- * Disable Claude Code's built-in auto-memory by setting CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
- * in ~/.claude/settings.json `env` block. claude-mem provides its own persistent memory
- * via plugin hooks; the built-in MEMORY.md system creates shadow state outside the user's
- * control and competes with claude-mem for context window tokens.
- *
- * Per anthropics/claude-code#23544, the env var is the only supported toggle.
- *
- * Idempotent: only writes when not already set, preserves existing env vars and other
- * settings keys, and merges atomically. Returns true when a write happened (for the
- * caller to surface in the install summary).
- */
-export function disableClaudeAutoMemory(): boolean {
-  const settings = readJsonSafe<Record<string, any>>(claudeSettingsPath(), {});
-  const env = (settings.env && typeof settings.env === 'object') ? settings.env : {};
-
-  if (env.CLAUDE_CODE_DISABLE_AUTO_MEMORY === '1') {
-    return false;
-  }
-
-  settings.env = { ...env, CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' };
-  writeJsonFileAtomic(claudeSettingsPath(), settings);
-  return true;
-}
-
-type ClaudeAutoMemoryChoice = 'disable' | 'leave-enabled' | 'not-applicable';
-
-async function resolveClaudeAutoMemoryChoice(
-  selectedIDEs: string[],
-  options: InstallOptions,
-): Promise<ClaudeAutoMemoryChoice> {
-  if (!selectedIDEs.includes('claude-code')) {
-    return 'not-applicable';
-  }
-
-  if (options.disableAutoMemory) {
-    return 'disable';
-  }
-
-  if (!isInteractive) {
-    return 'leave-enabled';
-  }
-
-  const choice = await p.select<'leave-enabled' | 'disable'>({
-    message: 'Disable Claude Code auto-memory?',
-    options: [
-      {
-        value: 'leave-enabled',
-        label: 'Leave enabled',
-        hint: 'Recommended; keeps Claude Code native memory visible on startup.',
-      },
-      {
-        value: 'disable',
-        label: 'Disable auto-memory',
-        hint: 'Only if you explicitly want claude-mem to replace native startup memory.',
-      },
-    ],
-    initialValue: 'leave-enabled',
-  });
-
-  if (p.isCancel(choice)) {
-    p.cancel('Installation cancelled.');
-    process.exit(0);
-  }
-
-  return choice;
-}
-
-function makeIDETask(ideId: string, summary: InstallSummary): TaskDescriptor | null {
-  const recordFailure = (label: string, output: string) => {
-    // Route every per-IDE failure through the central decision point. A single
-    // IDE failure is FAIL_LOUD_PER_IDE (partial install); the summary headline
-    // and exit code reflect it. The stderr is preserved verbatim in `details`.
-    installerError(ErrorSeverity.FAIL_LOUD_PER_IDE, {
-      component: label,
-      ide: ideId,
-      phase: 'ide-install',
-      cause: new Error(label),
-      details: output && output.trim().length > 0 ? output.trim().slice(0, 4000) : undefined,
-    }, summary);
-  };
-
-  switch (ideId) {
-    case 'claude-code': {
-      return {
-        title: 'Claude Code: registering plugin',
-        task: async () => `Claude Code: plugin registered ${styleText('green', 'OK')}`,
-      };
-    }
-
-    case 'cursor': {
-      return {
-        title: 'Cursor: installing hooks + MCP',
-        task: async (message) => {
-          message('Loading Cursor installer…');
-          const { installCursorHooks, configureCursorMcp } = await import('../../services/integrations/CursorHooksInstaller.js');
-          message('Installing Cursor hooks…');
-          const { result: cursorResult, output: hooksOutput } = await bufferConsole(() => installCursorHooks('user'));
-          if (cursorResult !== 0) {
-            recordFailure('Cursor: hook installation failed', hooksOutput);
-            return `Cursor: hook installation failed ${styleText('red', 'FAIL')}`;
-          }
-          message('Configuring Cursor MCP…');
-          const { result: mcpResult } = await bufferConsole(async () => configureCursorMcp('user'));
-          if (mcpResult === 0) {
-            return `Cursor: hooks + MCP installed ${styleText('green', 'OK')}`;
-          }
-          return `Cursor: hooks installed; MCP setup failed — run \`npx claude-mem cursor mcp\` ${styleText('yellow', '!')}`;
-        },
-      };
-    }
-
-    case 'opencode': {
-      return {
-        title: 'OpenCode: installing plugin',
-        task: async (message) => {
-          message('Loading OpenCode installer…');
-          const { installOpenCodeIntegration } = await import('../../services/integrations/OpenCodeInstaller.js');
-          message('Installing OpenCode plugin…');
-          const { result, output } = await bufferConsole(() => installOpenCodeIntegration());
-          if (result !== 0) {
-            recordFailure('OpenCode: plugin installation failed', output);
-            return `OpenCode: plugin installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `OpenCode: plugin installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'windsurf': {
-      return {
-        title: 'Windsurf: installing hooks',
-        task: async (message) => {
-          message('Loading Windsurf installer…');
-          const { installWindsurfHooks } = await import('../../services/integrations/WindsurfHooksInstaller.js');
-          message('Installing Windsurf hooks…');
-          const { result, output } = await bufferConsole(() => installWindsurfHooks());
-          if (result !== 0) {
-            recordFailure('Windsurf: hook installation failed', output);
-            return `Windsurf: hook installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `Windsurf: hooks installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'openclaw': {
-      return {
-        title: 'OpenClaw: installing plugin',
-        task: async (message) => {
-          message('Loading OpenClaw installer…');
-          const { installOpenClawIntegration } = await import('../../services/integrations/OpenClawInstaller.js');
-          message('Copying plugin files…');
-          const { result, output } = await bufferConsole(() => installOpenClawIntegration());
-          if (result !== 0) {
-            recordFailure('OpenClaw: plugin installation failed', output);
-            return `OpenClaw: plugin installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `OpenClaw: plugin installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'codex-cli': {
-      return {
-        title: 'Codex CLI: registering hooks marketplace',
-        task: async (message) => {
-          message('Loading Codex CLI installer…');
-          const { installCodexCli } = await import('../../services/integrations/CodexCliInstaller.js');
-          message('Registering native Codex hooks…');
-          const { result, output } = await bufferConsole(() => installCodexCli(marketplaceDirectory()));
-          if (result !== 0) {
-            recordFailure('Codex CLI: integration setup failed', output);
-            return `Codex CLI: integration setup failed ${styleText('red', 'FAIL')}`;
-          }
-          return `Codex CLI: hooks marketplace registered ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'antigravity': {
-      return {
-        title: 'Antigravity: installing hooks + MCP',
-        task: async (message) => {
-          message('Loading Antigravity CLI installer…');
-          const { installAntigravityCliHooks } = await import('../../services/integrations/AntigravityCliHooksInstaller.js');
-          message('Installing Antigravity hooks + MCP…');
-          const { result, output } = await bufferConsole(() => installAntigravityCliHooks());
-          if (result !== 0) {
-            recordFailure('Antigravity: hooks + MCP installation failed', output);
-            return `Antigravity: hooks + MCP installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `Antigravity: hooks + MCP installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'copilot-cli':
-    case 'goose':
-    case 'roo-code':
-    case 'warp': {
-      const allIDEs = detectInstalledIDEs();
-      const ideInfo = allIDEs.find((i) => i.id === ideId);
-      const ideLabel = ideInfo?.label ?? ideId;
-      return {
-        title: `${ideLabel}: installing MCP integration`,
-        task: async (message) => {
-          message('Loading MCP installer…');
-          const { MCP_IDE_INSTALLERS } = await import('../../services/integrations/McpIntegrations.js');
-          const mcpInstaller = MCP_IDE_INSTALLERS[ideId];
-          if (!mcpInstaller) {
-            return `${ideLabel}: MCP installer not found ${styleText('yellow', '!')}`;
-          }
-          message(`Configuring ${ideLabel} MCP…`);
-          const { result, output } = await bufferConsole(() => mcpInstaller());
-          if (result !== 0) {
-            recordFailure(`${ideLabel}: MCP integration failed`, output);
-            return `${ideLabel}: MCP integration failed ${styleText('red', 'FAIL')}`;
-          }
-          return `${ideLabel}: MCP integration installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    default: {
-      return null;
-    }
-  }
-}
-
-async function setupIDEs(selectedIDEs: string[], summary: InstallSummary): Promise<string[]> {
-  const tasks: TaskDescriptor[] = [];
-  for (const ideId of selectedIDEs) {
-    const taskDescriptor = makeIDETask(ideId, summary);
-    if (taskDescriptor) tasks.push(taskDescriptor);
-  }
-
-  if (tasks.length > 0) {
-    await runTasks(tasks);
-  }
-
-  // FAIL_LOUD_PER_IDE failures were recorded on the summary; if EVERY selected
-  // IDE failed, escalate to an ABORT (all-ides-failed) — a fully failed install
-  // must not print "Installation Complete".
-  if (selectedIDEs.length > 0 && summary.failedIDEs.length === selectedIDEs.length) {
-    installerError(ErrorSeverity.ABORT, {
-      component: 'all-ides',
-      phase: 'ide-install',
-      cause: new Error(`All ${selectedIDEs.length} selected IDE integrations failed.`),
-    }, summary);
-  }
-
-  return summary.failedIDEs;
-}
-
-function detectShellConfigFile(): { path: string; shell: 'zsh' | 'bash' | 'fish' } {
-  const home = homedir();
-  const shellEnv = process.env.SHELL ?? '';
-
-  if (shellEnv.includes('fish')) {
-    return { path: join(home, '.config', 'fish', 'config.fish'), shell: 'fish' };
-  }
-  if (shellEnv.includes('zsh')) {
-    return { path: join(home, '.zshrc'), shell: 'zsh' };
-  }
-  if (process.platform === 'darwin') {
-    const bashProfile = join(home, '.bash_profile');
-    if (existsSync(bashProfile)) return { path: bashProfile, shell: 'bash' };
-  }
-  return { path: join(home, '.bashrc'), shell: 'bash' };
-}
-
-function applyClaudeCodePathSetupIfNeeded(): void {
-  const home = homedir();
-  const claudeBinDir = join(home, '.local', 'bin');
-  const claudeBinary = join(claudeBinDir, 'claude');
-
-  if (!existsSync(claudeBinary)) return;
-
-  const currentPath = process.env.PATH ?? '';
-  const pathEntries = currentPath.split(':');
-  if (pathEntries.includes(claudeBinDir)) return;
-
-  const { path: configFile, shell } = detectShellConfigFile();
-  const binPathLiteral = '$HOME/.local/bin';
-  const exportLine = shell === 'fish'
-    ? `set -gx PATH ${claudeBinDir} $PATH`
-    : `export PATH="${binPathLiteral}:$PATH"`;
-
-  let existing = '';
-  if (existsSync(configFile)) {
-    try {
-      existing = readFileSync(configFile, 'utf-8');
-    } catch (error: unknown) {
-      // [ANTI-PATTERN IGNORED]: the failure is already surfaced to the user via the interactive-aware log.warn wrapper below (p.log.warn in a TTY, console.warn otherwise); a raw console call here would double-print.
-      log.warn(`Could not read ${configFile}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  } else {
-    try {
-      mkdirSync(dirname(configFile), { recursive: true });
-    } catch {
-      // Best-effort directory creation.
-    }
-  }
-
-  if (existing.includes(claudeBinDir) || existing.includes(binPathLiteral)) {
-    log.info(`Claude Code PATH already configured in ${configFile}`);
-  } else {
-    try {
-      const trailing = existing.length === 0 || existing.endsWith('\n') ? '' : '\n';
-      const block = `${trailing}\n# Added by claude-mem installer for Claude Code\n${exportLine}\n`;
-      writeFileSync(configFile, existing + block, 'utf-8');
-      log.success(`Added Claude Code to PATH in ${configFile}`);
-    } catch (error: unknown) {
-      // [ANTI-PATTERN IGNORED]: the failure is already surfaced to the user via the interactive-aware log.warn wrapper below (p.log.warn in a TTY, console.warn otherwise), together with the manual remediation command.
-      log.warn(`Could not update ${configFile}: ${error instanceof Error ? error.message : String(error)}`);
-      log.info(`Run manually: echo '${exportLine}' >> ${configFile}`);
-      return;
-    }
-  }
-
-  process.env.PATH = `${claudeBinDir}:${currentPath}`;
-}
-
-async function installClaudeCode(): Promise<boolean> {
-  const command = IS_WINDOWS
-    ? 'powershell -ExecutionPolicy ByPass -c "irm https://claude.ai/install.ps1 | iex"'
-    : 'curl -fsSL https://claude.ai/install.sh | bash';
-  const installShell = IS_WINDOWS ? (process.env.ComSpec ?? 'cmd.exe') : '/bin/bash';
-
-  const spinner = isInteractive ? p.spinner() : null;
-  spinner?.start('Installing Claude Code (this can take a few minutes — downloading the native build)…');
-
-  return new Promise<boolean>((resolve) => {
-    let captured = '';
-    const child = spawnHidden(command, [], {
-      shell: installShell,
-      stdio: spinner ? ['inherit', 'pipe', 'pipe'] : 'inherit',
-    });
-
-    child.stdout?.on('data', (chunk: Buffer) => { captured += chunk.toString(); });
-    child.stderr?.on('data', (chunk: Buffer) => { captured += chunk.toString(); });
-
-    child.on('error', (error: Error) => {
-      spinner?.error('Claude Code install failed');
-      if (captured) process.stderr.write(captured);
-      log.error(`Claude Code install failed: ${error.message}`);
-      log.info('You can install it manually later: https://claude.ai/install.sh');
-      resolve(false);
-    });
-
-    child.on('exit', (code) => {
-      if (code !== 0) {
-        spinner?.error('Claude Code install failed');
-        if (captured) process.stderr.write(captured);
-        log.error(`Claude Code install failed (exit ${code ?? 'unknown'})`);
-        log.info('You can install it manually later: https://claude.ai/install.sh');
-        resolve(false);
-        return;
-      }
-      spinner?.stop('Claude Code installed');
-      if (!IS_WINDOWS) {
-        try {
-          applyClaudeCodePathSetupIfNeeded();
-        } catch (error: unknown) {
-          // [ANTI-PATTERN IGNORED]: the failure is already surfaced to the user via the interactive-aware log.warn wrapper below (p.log.warn in a TTY, console.warn otherwise); PATH setup is best-effort after a successful install.
-          log.warn(`Could not auto-apply PATH setup: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      }
-      resolve(true);
-    });
-  });
-}
-
-async function promptForIDESelection(): Promise<string[]> {
-  let detectedIDEs = detectInstalledIDEs();
-  const claudeCodeInfo = detectedIDEs.find((ide) => ide.id === 'claude-code');
-
-  if (claudeCodeInfo && !claudeCodeInfo.detected) {
-    log.warn('Claude Code is not installed. Claude-mem works best in Claude Code, but also works with the IDEs below.');
-    const choice = await p.select<'install' | 'skip' | 'cancel'>({
-      message: 'Install Claude Code now?',
-      options: [
-        { value: 'install', label: 'Yes — install Claude Code (recommended)' },
-        { value: 'skip', label: 'No — pick another IDE below' },
-        { value: 'cancel', label: 'Cancel installation' },
-      ],
-      initialValue: 'install',
-    });
-    if (p.isCancel(choice) || choice === 'cancel') {
-      p.cancel('Installation cancelled.');
-      process.exit(0);
-    }
-    if (choice === 'install') {
-      if (await installClaudeCode()) {
-        detectedIDEs = detectInstalledIDEs();
-      }
-    }
-  }
-
-  const detected = detectedIDEs.filter((ide) => ide.detected);
-
-  if (detected.length === 0) {
-    log.warn('No supported IDEs detected — pick the one(s) you plan to use.');
-  }
-
-  const options = detectedIDEs.map((ide) => {
-    const detectedTag = ide.detected ? ' [detected]' : '';
-    return {
-      value: ide.id,
-      label: ide.label,
-      hint: `${ide.hint}${detectedTag}`,
-    };
-  });
-
-  const result = await p.multiselect({
-    message: 'Which IDEs do you use?',
-    options,
-    initialValues: [],
-    required: true,
-  });
-
-  if (p.isCancel(result)) {
-    p.cancel('Installation cancelled.');
-    process.exit(0);
-  }
-
-  return result as string[];
-}
 
 function copyPluginToMarketplace(): void {
   const marketplaceDir = marketplaceDirectory();
   const packageRoot = npmPackageRootDirectory();
 
-  ensureDirectoryExists(marketplaceDir);
+  if (!existsSync(marketplaceDir)) {
+    mkdirSync(marketplaceDir, { recursive: true });
+  }
 
   const allowedTopLevelEntries = [
     '.agents',
@@ -681,7 +165,9 @@ function copyPluginToCache(version: string): void {
   const cachePath = pluginCacheDirectory(version);
 
   rmSync(cachePath, { recursive: true, force: true });
-  ensureDirectoryExists(cachePath);
+  if (!existsSync(cachePath)) {
+    mkdirSync(cachePath, { recursive: true });
+  }
   cpSync(sourcePluginDirectory, cachePath, { recursive: true, force: true });
 }
 
@@ -776,35 +262,13 @@ function mergeSettings(updates: Record<string, string>): boolean {
 }
 
 type ProviderId = 'claude' | 'gemini' | 'openrouter';
-type ClaudeAccessMode = 'subscription' | 'api-key';
-type ClaudeApiMode = 'direct' | 'gateway';
 // Phase 1d: Persisted DB literals (`server_beta_schema_migrations`, job_type
 // enums, `server-beta-worker` lockedBy marker) are intentionally preserved in
 // the source code; runtime-selector dual-accepts both `'server'` and
 // `'server-beta'` settings values, but the installer writes the new canonical
-// form `'server'` going forward (settings keys: CLAUDE_MEM_SERVER_{URL,
+// form `'server'` going forward (settings keys: OPENCODE_MEM_SERVER_{URL,
 // API_KEY,PROJECT_ID}).
 type RuntimeId = 'worker' | 'server';
-
-function readRawStoredAuthMethod(): 'subscription' | 'api-key' | 'gateway' | undefined {
-  try {
-    const value = readFlatSettings(USER_SETTINGS_PATH)?.CLAUDE_MEM_CLAUDE_AUTH_METHOD;
-    if (value === 'subscription' || value === 'api-key' || value === 'gateway') return value;
-    return undefined;
-  } catch {
-    // [ANTI-PATTERN IGNORED]: settings.json is optional and may be absent or hand-edited into invalid JSON; falling back to env-based auth detection in resolveClaudeAuthMethod is the designed recovery.
-    return undefined;
-  }
-}
-
-function resolveClaudeAuthMethod(): 'subscription' | 'api-key' | 'gateway' {
-  const stored = readRawStoredAuthMethod();
-  if (stored) return stored;
-  const env = loadClaudeMemEnv();
-  if (env.ANTHROPIC_BASE_URL?.trim()) return 'gateway';
-  if (env.ANTHROPIC_API_KEY?.trim()) return 'api-key';
-  return 'subscription';
-}
 
 const DEFAULT_SERVER_RUNTIME_BASE_URL = 'http://127.0.0.1:37877';
 
@@ -823,17 +287,17 @@ async function promptRuntime(options: InstallOptions): Promise<RuntimeId> {
       await setupServerRuntimeNonInteractive(options);
       return 'server';
     }
-    mergeSettings({ CLAUDE_MEM_RUNTIME: 'worker' });
+    mergeSettings({ OPENCODE_MEM_RUNTIME: 'worker' });
     return 'worker';
   }
 
   if (!isInteractive) {
-    mergeSettings({ CLAUDE_MEM_RUNTIME: 'worker' });
+    mergeSettings({ OPENCODE_MEM_RUNTIME: 'worker' });
     return 'worker';
   }
 
   const selected = await p.select<RuntimeId>({
-    message: 'Which runtime should claude-mem start after install?',
+    message: 'Which runtime should opencode-mem start after install?',
     options: [
       { value: 'worker', label: 'Worker', hint: 'stable compatibility path' },
       { value: 'server', label: 'Server (beta)', hint: 'REST V1, API keys, team-ready storage' },
@@ -847,7 +311,7 @@ async function promptRuntime(options: InstallOptions): Promise<RuntimeId> {
   }
 
   mergeSettings({
-    CLAUDE_MEM_RUNTIME: selected,
+    OPENCODE_MEM_RUNTIME: selected,
   });
 
   if (selected === 'server') {
@@ -864,11 +328,11 @@ async function promptRuntime(options: InstallOptions): Promise<RuntimeId> {
 async function setupServerRuntimeNonInteractive(options: InstallOptions): Promise<void> {
   const serverBaseUrl = (options.serverUrl ?? '').trim() || DEFAULT_SERVER_RUNTIME_BASE_URL;
 
-  mergeSettings({ CLAUDE_MEM_RUNTIME: 'server', CLAUDE_MEM_SERVER_URL: serverBaseUrl });
+  mergeSettings({ OPENCODE_MEM_RUNTIME: 'server', OPENCODE_MEM_SERVER_URL: serverBaseUrl });
 
   log.info(
     'Server runtime selected. Bring up the bundled stack with '
-      + '`docker compose up -d postgres valkey claude-mem-server claude-mem-worker` '
+      + '`docker compose up -d postgres valkey opencode-mem-server opencode-mem-worker` '
       + `(pg + redis/valkey). The server listens at ${serverBaseUrl}.`,
   );
 
@@ -885,11 +349,11 @@ async function setupServerRuntimeNonInteractive(options: InstallOptions): Promis
 async function maybeBootstrapServerApiKey(): Promise<void> {
   // Only attempt if Postgres is configured. Without DATABASE_URL we cannot
   // reach the api_keys table — the operator must configure the server first
-  // and rerun `claude-mem server keys rotate`.
-  if (!process.env.CLAUDE_MEM_SERVER_DATABASE_URL) {
+  // and rerun `opencode-mem server keys rotate`.
+  if (!process.env.OPENCODE_MEM_SERVER_DATABASE_URL) {
     log.warn(
-      'Skipping local hook API key bootstrap: CLAUDE_MEM_SERVER_DATABASE_URL is not set. '
-        + 'Run `npx claude-mem server keys rotate` after configuring Postgres to provision a key.',
+      'Skipping local hook API key bootstrap: OPENCODE_MEM_SERVER_DATABASE_URL is not set. '
+        + 'Run `npx opencode-mem server keys rotate` after configuring Postgres to provision a key.',
     );
     return;
   }
@@ -899,7 +363,7 @@ async function maybeBootstrapServerApiKey(): Promise<void> {
     // [ANTI-PATTERN IGNORED]: the failure is already surfaced to the user via the interactive-aware log.warn wrapper below (p.log.warn in a TTY, console.warn otherwise), including the manual remediation command.
     log.warn(
       `Failed to bootstrap server API key: ${error instanceof Error ? error.message : String(error)}. `
-        + 'Hooks will fall back to the worker until you run `npx claude-mem server keys rotate`.',
+        + 'Hooks will fall back to the worker until you run `npx opencode-mem server keys rotate`.',
     );
   }
 }
@@ -920,29 +384,17 @@ async function bootstrapAndPersistServerApiKey(): Promise<void> {
 }
 
 async function promptProvider(options: InstallOptions): Promise<ProviderId> {
-  const initialProvider = (getSetting('CLAUDE_MEM_PROVIDER') as ProviderId) || 'claude';
+  const initialProvider = (getSetting('OPENCODE_MEM_PROVIDER') as ProviderId) || 'claude';
 
-  const persistClaudeProvider = (authMethod?: 'subscription' | 'api-key' | 'gateway') => {
-    const resolvedAuthMethod = authMethod ?? resolveClaudeAuthMethod();
+  const persistClaudeProvider = () => {
     const wrote = mergeSettings({
-      CLAUDE_MEM_PROVIDER: 'claude',
-      CLAUDE_MEM_CLAUDE_AUTH_METHOD: resolvedAuthMethod,
+      OPENCODE_MEM_PROVIDER: 'claude',
     });
-    if (wrote) log.info('Saved Claude Agent SDK configuration to ~/.claude-mem/settings.json');
-  };
-
-  const useSubscriptionAuth = () => {
-    persistClaudeProvider('subscription');
-    saveClaudeMemEnv({
-      ANTHROPIC_API_KEY: '',
-      ANTHROPIC_BASE_URL: '',
-      ANTHROPIC_AUTH_TOKEN: '',
-    });
-    log.info('Configured claude-mem to use your logged-in Claude SDK account.');
+    if (wrote) log.info('Saved Claude provider configuration to ~/.opencode-mem/settings.json');
   };
 
   const configureDirectApiKey = async (): Promise<void> => {
-    const existing = loadClaudeMemEnv().ANTHROPIC_API_KEY || '';
+    const existing = loadOpenCodeMemEnv().ANTHROPIC_API_KEY || '';
     if (existing.trim().length > 0) {
       const choice = await p.select<'keep' | 'replace'>({
         message: 'An Anthropic API key is already configured. Keep it or enter a new one?',
@@ -957,12 +409,12 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
         return;
       }
       if (choice === 'keep') {
-        saveClaudeMemEnv({
+        saveOpenCodeMemEnv({
           ANTHROPIC_API_KEY: existing.trim(),
           ANTHROPIC_BASE_URL: '',
           ANTHROPIC_AUTH_TOKEN: '',
         });
-        persistClaudeProvider('api-key');
+        persistClaudeProvider();
         return;
       }
     }
@@ -978,60 +430,13 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
       return;
     }
 
-    saveClaudeMemEnv({
+    saveOpenCodeMemEnv({
       ANTHROPIC_API_KEY: String(apiKeyResult).trim(),
       ANTHROPIC_BASE_URL: '',
       ANTHROPIC_AUTH_TOKEN: '',
     });
-    persistClaudeProvider('api-key');
+    persistClaudeProvider();
     log.info('Saved Anthropic API key for the Claude Agent SDK path.');
-  };
-
-  const configureGateway = async (): Promise<void> => {
-    const existing = loadClaudeMemEnv();
-    const baseUrlResult = await p.text({
-      message: 'Gateway URL:',
-      placeholder: existing.ANTHROPIC_BASE_URL || 'http://localhost:4000',
-      defaultValue: existing.ANTHROPIC_BASE_URL || '',
-      validate: (v?: string) => {
-        const value = v?.trim() ?? '';
-        if (!value) return 'Gateway URL required';
-        try {
-          new URL(value);
-          return undefined;
-        } catch {
-          // [ANTI-PATTERN IGNORED]: a URL parse failure here just means the user typed an invalid gateway URL; the recovery is the inline validation message the prompt displays on every attempt.
-          return 'Enter a valid URL, for example http://localhost:4000';
-        }
-      },
-    });
-
-    if (p.isCancel(baseUrlResult)) {
-      log.warn('Gateway setup cancelled — leaving existing configuration untouched.');
-      return;
-    }
-
-    const tokenResult = await p.password({
-      message: 'Gateway key/token (leave blank to keep current token, or type a new one):',
-      mask: '*',
-    });
-
-    const tokenCancelled = p.isCancel(tokenResult);
-    const tokenInput = tokenCancelled ? '' : String(tokenResult).trim();
-    const env: Record<string, string> = {
-      ANTHROPIC_API_KEY: '',
-      ANTHROPIC_BASE_URL: String(baseUrlResult).trim(),
-    };
-    if (!tokenCancelled && tokenInput.length > 0) {
-      env.ANTHROPIC_AUTH_TOKEN = tokenInput;
-    }
-    saveClaudeMemEnv(env);
-    persistClaudeProvider('gateway');
-    if (tokenCancelled || tokenInput.length === 0) {
-      log.info('Gateway URL saved; existing gateway token preserved.');
-    } else {
-      log.info('Configured Claude Agent SDK gateway in ~/.claude-mem/.env.');
-    }
   };
 
   if (!isInteractive) {
@@ -1040,57 +445,13 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
         persistClaudeProvider();
         return 'claude';
       }
-      const wrote = mergeSettings({ CLAUDE_MEM_PROVIDER: options.provider });
-      if (wrote) log.info(`Saved provider=${options.provider} to ~/.claude-mem/settings.json`);
-      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set CLAUDE_MEM_${options.provider.toUpperCase()}_API_KEY and CLAUDE_MEM_PROVIDER in settings.json or env manually if not already set.`);
+      const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: options.provider });
+      if (wrote) log.info(`Saved provider=${options.provider} to ~/.opencode-mem/settings.json`);
+      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set OPENCODE_MEM_${options.provider.toUpperCase()}_API_KEY and OPENCODE_MEM_PROVIDER in settings.json or env manually if not already set.`);
       return options.provider;
     }
     return initialProvider;
   }
-
-  const runClaudeAuthFlow = async (): Promise<void> => {
-    const resolvedAuthMethod = resolveClaudeAuthMethod();
-    const initialAccessMode: ClaudeAccessMode =
-      resolvedAuthMethod === 'subscription' ? 'subscription' : 'api-key';
-
-    const result = await p.select<ClaudeAccessMode>({
-      message: 'Do you use a subscription plan or an API key/gateway for the memory agent?',
-      options: [
-        { value: 'subscription', label: 'Subscription plan (recommended — uses your logged-in Claude SDK account)' },
-        { value: 'api-key', label: 'API key or gateway (Anthropic, LiteLLM, or compatible proxy)' },
-      ],
-      initialValue: initialAccessMode,
-    });
-
-    if (p.isCancel(result)) {
-      p.cancel('Installation cancelled.');
-      process.exit(0);
-    }
-    if (result === 'subscription') {
-      useSubscriptionAuth();
-      return;
-    }
-
-    const apiModeResult = await p.select<ClaudeApiMode>({
-      message: 'How should claude-mem connect?',
-      options: [
-        { value: 'direct', label: 'Anthropic API key' },
-        { value: 'gateway', label: 'LiteLLM or custom gateway' },
-      ],
-      initialValue: resolvedAuthMethod === 'gateway' || loadClaudeMemEnv().ANTHROPIC_BASE_URL ? 'gateway' : 'direct',
-    });
-
-    if (p.isCancel(apiModeResult)) {
-      p.cancel('Installation cancelled.');
-      process.exit(0);
-    }
-
-    if (apiModeResult === 'gateway') {
-      await configureGateway();
-    } else {
-      await configureDirectApiKey();
-    }
-  };
 
   let selectedProvider: ProviderId;
   if (options.provider) {
@@ -1113,19 +474,19 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
   }
 
   if (selectedProvider === 'claude') {
-    await runClaudeAuthFlow();
+    await configureDirectApiKey();
     return 'claude';
   }
 
   const providerLabel = selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter';
   const keyEnvName = selectedProvider === 'gemini'
-    ? 'CLAUDE_MEM_GEMINI_API_KEY'
-    : 'CLAUDE_MEM_OPENROUTER_API_KEY';
+    ? 'OPENCODE_MEM_GEMINI_API_KEY'
+    : 'OPENCODE_MEM_OPENROUTER_API_KEY';
 
   const existingKey = getSetting(keyEnvName as keyof SettingsDefaults) as string | undefined;
   if (existingKey && existingKey.trim().length > 0) {
-    const wrote = mergeSettings({ CLAUDE_MEM_PROVIDER: selectedProvider });
-    if (wrote) log.info(`Saved provider=${selectedProvider} to ~/.claude-mem/settings.json`);
+    const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: selectedProvider });
+    if (wrote) log.info(`Saved provider=${selectedProvider} to ~/.opencode-mem/settings.json`);
     return selectedProvider;
   }
 
@@ -1143,11 +504,11 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
 
   const apiKey = String(apiKeyResult).trim();
   const wrote = mergeSettings({
-    CLAUDE_MEM_PROVIDER: selectedProvider,
+    OPENCODE_MEM_PROVIDER: selectedProvider,
     [keyEnvName]: apiKey,
   });
   if (wrote) {
-    log.info(`Saved provider=${selectedProvider} to ~/.claude-mem/settings.json`);
+    log.info(`Saved provider=${selectedProvider} to ~/.opencode-mem/settings.json`);
   }
   return selectedProvider;
 }
@@ -1158,57 +519,27 @@ async function promptClaudeModel(options: InstallOptions): Promise<void> {
     'claude-sonnet-4-6',
     'claude-opus-4-7',
   ]);
-  const allowCustomModel = resolveClaudeAuthMethod() === 'gateway';
 
-  if (options.model && !allowCustomModel) {
+  if (options.model) {
     if (!allowed.has(options.model)) {
       throw new Error(
         `Unknown Claude model: ${options.model}. Allowed: ${[...allowed].join(', ')}`,
       );
     }
-    const wrote = mergeSettings({ CLAUDE_MEM_MODEL: options.model });
+    const wrote = mergeSettings({ OPENCODE_MEM_MODEL: options.model });
     if (wrote) {
-      log.info(`Saved Claude model=${options.model} to ~/.claude-mem/settings.json`);
-    }
-    return;
-  }
-  if (options.model && allowCustomModel) {
-    const wrote = mergeSettings({ CLAUDE_MEM_MODEL: options.model });
-    if (wrote) {
-      log.info(`Saved gateway model=${options.model} to ~/.claude-mem/settings.json`);
+      log.info(`Saved Claude model=${options.model} to ~/.opencode-mem/settings.json`);
     }
     return;
   }
 
   if (!isInteractive) return;
 
-  const initialModel = getSetting('CLAUDE_MEM_MODEL');
-
-  if (allowCustomModel) {
-    const result = await p.text({
-      message: 'Which model should the gateway use?',
-      placeholder: 'claude-haiku-4-5-20251001',
-      defaultValue: initialModel || 'claude-haiku-4-5-20251001',
-      validate: (v?: string) => (!v || v.trim().length === 0) ? 'Model required' : undefined,
-    });
-
-    if (p.isCancel(result)) {
-      p.cancel('Installation cancelled.');
-      process.exit(0);
-    }
-
-    const selectedModel = String(result).trim();
-    const wrote = mergeSettings({ CLAUDE_MEM_MODEL: selectedModel });
-    if (wrote) {
-      log.info(`Saved gateway model=${selectedModel} to ~/.claude-mem/settings.json`);
-    }
-    return;
-  }
-
+  const initialModel = getSetting('OPENCODE_MEM_MODEL');
   const initialValue = allowed.has(initialModel) ? initialModel : 'claude-haiku-4-5-20251001';
 
   const result = await p.select<string>({
-    message: 'Which Claude model should claude-mem use to compress observations?\nThis runs whenever you and Claude touch a file — keep it cheap and fast.',
+    message: 'Which Claude model should opencode-mem use to compress observations?\nThis runs whenever you and Claude touch a file — keep it cheap and fast.',
     options: [
       { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 (recommended — fast, cheap, great for compression)' },
       { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (balanced quality and cost)' },
@@ -1223,23 +554,115 @@ async function promptClaudeModel(options: InstallOptions): Promise<void> {
   }
   const selectedModel = result as string;
 
-  const wrote = mergeSettings({ CLAUDE_MEM_MODEL: selectedModel });
+  const wrote = mergeSettings({ OPENCODE_MEM_MODEL: selectedModel });
   if (wrote) {
-    log.info(`Saved Claude model=${selectedModel} to ~/.claude-mem/settings.json`);
+    log.info(`Saved Claude model=${selectedModel} to ~/.opencode-mem/settings.json`);
   }
+}
+
+function makeIDETask(ideId: string, summary: InstallSummary): TaskDescriptor | null {
+  const recordFailure = (label: string, output: string) => {
+    // Route every per-IDE failure through the central decision point. A single
+    // IDE failure is FAIL_LOUD_PER_IDE (partial install); the summary headline
+    // and exit code reflect it. The stderr is preserved verbatim in `details`.
+    installerError(ErrorSeverity.FAIL_LOUD_PER_IDE, {
+      component: label,
+      ide: ideId,
+      phase: 'ide-install',
+      cause: new Error(label),
+      details: output && output.trim().length > 0 ? output.trim().slice(0, 4000) : undefined,
+    }, summary);
+  };
+
+  switch (ideId) {
+    case 'opencode': {
+      return {
+        title: 'OpenCode: installing plugin',
+        task: async (message) => {
+          message('Loading OpenCode installer…');
+          const { installOpenCodeIntegration } = await import('../../services/integrations/OpenCodeInstaller.js');
+          message('Installing OpenCode plugin…');
+          const { result, output } = await bufferConsole(() => installOpenCodeIntegration());
+          if (result !== 0) {
+            recordFailure('OpenCode: plugin installation failed', output);
+            return `OpenCode: plugin installation failed ${styleText('red', 'FAIL')}`;
+          }
+          return `OpenCode: plugin installed ${styleText('green', 'OK')}`;
+        },
+      };
+    }
+
+    default: {
+      return null;
+    }
+  }
+}
+
+async function setupIDEs(selectedIDEs: string[], summary: InstallSummary): Promise<string[]> {
+  const tasks: TaskDescriptor[] = [];
+  for (const ideId of selectedIDEs) {
+    const taskDescriptor = makeIDETask(ideId, summary);
+    if (taskDescriptor) tasks.push(taskDescriptor);
+  }
+
+  if (tasks.length > 0) {
+    await runTasks(tasks);
+  }
+
+  // FAIL_LOUD_PER_IDE failures were recorded on the summary; if EVERY selected
+  // IDE failed, escalate to an ABORT (all-ides-failed) — a fully failed install
+  // must not print "Installation Complete".
+  if (selectedIDEs.length > 0 && summary.failedIDEs.length === selectedIDEs.length) {
+    installerError(ErrorSeverity.ABORT, {
+      component: 'all-ides',
+      phase: 'ide-install',
+      cause: new Error(`All ${selectedIDEs.length} selected IDE integrations failed.`),
+    }, summary);
+  }
+
+  return summary.failedIDEs;
+}
+
+async function promptForIDESelection(): Promise<string[]> {
+  const detectedIDEs = detectInstalledIDEs();
+  const openCodeInfo = detectedIDEs.find((ide) => ide.id === 'opencode');
+
+  if (openCodeInfo && !openCodeInfo.detected) {
+    log.warn('OpenCode not detected. The integration will be installed but may need manual setup.');
+  }
+
+  const result = await p.multiselect({
+    message: 'Which IDEs do you use?',
+    options: [
+      {
+        value: 'opencode',
+        label: 'OpenCode',
+        hint: 'plugin-based integration',
+      },
+    ],
+    initialValues: ['opencode'],
+    required: true,
+  });
+
+  if (p.isCancel(result)) {
+    p.cancel('Installation cancelled.');
+    process.exit(0);
+  }
+
+  return result as string[];
 }
 
 // --- CMEM Online email opt-in ----------------------------------------------
 // Interactive, optional. The CLI POSTs the email + optional note to the live
 // waitlist endpoint (cmem.ai/api/waitlist), which handles persistence, dedup,
-// and the confirmation email server-side. CLAUDE_MEM_SIGNUP_URL overrides the
+// and the confirmation email server-side. OPENCODE_MEM_SIGNUP_URL overrides the
 // default for testing/staging. No API keys ever ship in the npx package — the
 // endpoint is unauthenticated and the secret (Resend) stays server-side.
 // Anything that goes wrong here is swallowed — a marketing opt-in must never
 // block or fail the install.
 
 const DEFAULT_SIGNUP_ENDPOINT = 'https://cmem.ai/api/waitlist';
-const SIGNUP_ENDPOINT = process.env.CLAUDE_MEM_SIGNUP_URL?.trim() || DEFAULT_SIGNUP_ENDPOINT;
+const SIGNUP_ENDPOINT = process.env.OPENCODE_MEM_SIGNUP_URL?.trim() || DEFAULT_SIGNUP_ENDPOINT;
 const SIGNUP_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface StoredSignup {
@@ -1251,12 +674,12 @@ interface StoredSignup {
 function parseStoredSignup(): StoredSignup | null {
   const flat = readFlatSettings(USER_SETTINGS_PATH);
   if (!flat) return null;
-  const email = typeof flat.CLAUDE_MEM_ONLINE_SIGNUP_EMAIL === 'string' ? flat.CLAUDE_MEM_ONLINE_SIGNUP_EMAIL : '';
+  const email = typeof flat.OPENCODE_MEM_ONLINE_SIGNUP_EMAIL === 'string' ? flat.OPENCODE_MEM_ONLINE_SIGNUP_EMAIL : '';
   if (!email) return null;
   return {
     email,
-    note: typeof flat.CLAUDE_MEM_ONLINE_SIGNUP_NOTE === 'string' ? flat.CLAUDE_MEM_ONLINE_SIGNUP_NOTE : '',
-    sent: flat.CLAUDE_MEM_ONLINE_SIGNUP_SENT === 'true',
+    note: typeof flat.OPENCODE_MEM_ONLINE_SIGNUP_NOTE === 'string' ? flat.OPENCODE_MEM_ONLINE_SIGNUP_NOTE : '',
+    sent: flat.OPENCODE_MEM_ONLINE_SIGNUP_SENT === 'true',
   };
 }
 
@@ -1316,7 +739,7 @@ async function promptTelemetryOptIn(): Promise<void> {
 
   p.log.message(styleText('dim', 
     'Anonymous install ID only — no prompts, file paths, code, or project names, ever.\n'
-    + 'Details: https://docs.claude-mem.ai/telemetry · Change anytime: claude-mem telemetry disable',
+    + 'Details: https://docs.opencode-mem.ai/telemetry · Change anytime: opencode-mem telemetry disable',
   ));
   const consent = await p.confirm({
     message: 'Share anonymized usage data with CMEM? It is on by default and helps us make the product better.',
@@ -1336,7 +759,7 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
   // Interactive-only, and easy to turn off for CI / scripted installs.
   if (!isInteractive) return;
   if (process.env.CI) return;
-  if (String(process.env.CLAUDE_MEM_ONLINE_OPTIN ?? '').trim().toLowerCase() === 'false') return;
+  if (String(process.env.OPENCODE_MEM_ONLINE_OPTIN ?? '').trim().toLowerCase() === 'false') return;
 
   const prior = readStoredSignup();
   if (prior) {
@@ -1344,7 +767,7 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
     // reached the service, quietly retry once now and record the result.
     if (!prior.sent) {
       const ok = await submitOnlineSignup({ email: prior.email, note: prior.note, version });
-      if (ok) mergeSettings({ CLAUDE_MEM_ONLINE_SIGNUP_SENT: 'true' });
+      if (ok) mergeSettings({ OPENCODE_MEM_ONLINE_SIGNUP_SENT: 'true' });
     }
     return;
   }
@@ -1388,10 +811,10 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
   // Persist locally regardless of the network result so we never re-prompt;
   // a failed send is retried silently on the next install (see above).
   mergeSettings({
-    CLAUDE_MEM_ONLINE_SIGNUP_EMAIL: email,
-    CLAUDE_MEM_ONLINE_SIGNUP_NOTE: note,
-    CLAUDE_MEM_ONLINE_SIGNUP_AT: new Date().toISOString(),
-    CLAUDE_MEM_ONLINE_SIGNUP_SENT: ok ? 'true' : 'false',
+    OPENCODE_MEM_ONLINE_SIGNUP_EMAIL: email,
+    OPENCODE_MEM_ONLINE_SIGNUP_NOTE: note,
+    OPENCODE_MEM_ONLINE_SIGNUP_AT: new Date().toISOString(),
+    OPENCODE_MEM_ONLINE_SIGNUP_SENT: ok ? 'true' : 'false',
   });
   if (ok) {
     spin.stop(`You're on the list — we'll email ${styleText('cyan', email)} your CMEM Online link.`);
@@ -1425,7 +848,6 @@ export async function runInstallCommand(options: InstallOptions = {}): Promise<v
         error_category: err.category.id,
         interactive: isInteractive,
         install_method: detectInstallMethod(),
-        claude_code_version: detectClaudeCodeVersion(),
       }, { person: true });
       // Flush whatever warnings accrued before the abort, then print the
       // remediation headline and exit non-zero. ABORT must never reach the
@@ -1435,7 +857,7 @@ export async function runInstallCommand(options: InstallOptions = {}): Promise<v
       if (isInteractive) {
         p.log.error(headline);
         p.log.error(err.remediation);
-        p.outro(styleText('red', 'claude-mem installation aborted.'));
+        p.outro(styleText('red', 'opencode-mem installation aborted.'));
       } else {
         console.error(`\n  ${headline}`);
         console.error(`  ${err.remediation}`);
@@ -1457,9 +879,9 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
 
   if (isInteractive) {
     await playBanner();
-    p.intro(styleText(['bgCyan', 'black'], ' claude-mem install '));
+    p.intro(styleText(['bgCyan', 'black'], ' opencode-mem install '));
   } else {
-    console.log('claude-mem install');
+    console.log('opencode-mem install');
   }
   const marketplaceDir = marketplaceDirectory();
   const alreadyInstalled = existsSync(join(marketplaceDir, 'plugin', '.claude-plugin', 'plugin.json'));
@@ -1477,7 +899,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   }
 
   const dot = styleText('dim', '·');
-  const segments = [`${styleText('bold', 'claude-mem')} ${styleText('cyan', `v${version}`)}`];
+  const segments = [`${styleText('bold', 'opencode-mem')} ${styleText('cyan', `v${version}`)}`];
   if (existingVersion && existingVersion !== version) {
     segments.push(`installed ${styleText('yellow', `v${existingVersion}`)}`);
   } else if (existingVersion) {
@@ -1504,17 +926,15 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   let selectedIDEs: string[];
   if (options.ide) {
     selectedIDEs = [options.ide];
-    const allIDEs = detectInstalledIDEs();
-    const match = allIDEs.find((i) => i.id === options.ide);
-    if (!match) {
+    if (options.ide !== 'opencode') {
       log.error(`Unknown IDE: ${options.ide}`);
-      log.info(`Available IDEs: ${allIDEs.map((i) => i.id).join(', ')}`);
+      log.info(`Available IDEs: opencode`);
       process.exit(1);
     }
   } else if (process.stdin.isTTY) {
     selectedIDEs = await promptForIDESelection();
   } else {
-    selectedIDEs = ['claude-code'];
+    selectedIDEs = ['opencode'];
   }
 
   const selectedRuntime = await promptRuntime(options);
@@ -1524,32 +944,25 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   }
 
   let workerStartResult: WorkerStartResult = 'dead';
-  // Claude Code consumes the marketplace plugin system directly, so any selection
-  // (claude-code or otherwise) needs the marketplace + plugin registration steps.
-  // The only time we'd skip is a hypothetical no-IDE install, which the prompt above
-  // doesn't allow today.
-  const needsMarketplace = selectedIDEs.length > 0;
 
   {
-    if (needsMarketplace) {
-      const installPort = getSetting('CLAUDE_MEM_WORKER_PORT');
-      const shutdownSpinner = isInteractive ? p.spinner() : null;
-      shutdownSpinner?.start('Stopping running worker (so we can overwrite cleanly)…');
-      try {
-        const result = await shutdownWorkerAndWait(installPort, 10000);
-        const stopMessage = result.workerWasRunning ? 'Stopped running worker before overwrite.' : 'No worker running — proceeding.';
-        if (shutdownSpinner) {
-          shutdownSpinner.stop(stopMessage);
-        } else if (result.workerWasRunning) {
-          log.info('Stopped running worker before overwrite.');
-        }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        if (shutdownSpinner) {
-          shutdownSpinner.error(`Pre-overwrite worker shutdown failed: ${message}`);
-        } else {
-          console.warn('[install] Pre-overwrite worker shutdown failed:', message);
-        }
+    const installPort = getSetting('OPENCODE_MEM_WORKER_PORT');
+    const shutdownSpinner = isInteractive ? p.spinner() : null;
+    shutdownSpinner?.start('Stopping running worker (so we can overwrite cleanly)…');
+    try {
+      const result = await shutdownWorkerAndWait(installPort, 10000);
+      const stopMessage = result.workerWasRunning ? 'Stopped running worker before overwrite.' : 'No worker running — proceeding.';
+      if (shutdownSpinner) {
+        shutdownSpinner.stop(stopMessage);
+      } else if (result.workerWasRunning) {
+        log.info('Stopped running worker before overwrite.');
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (shutdownSpinner) {
+        shutdownSpinner.error(`Pre-overwrite worker shutdown failed: ${message}`);
+      } else {
+        console.warn('[install] Pre-overwrite worker shutdown failed:', message);
       }
     }
 
@@ -1560,27 +973,6 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
           message(`Caching v${version}...`);
           copyPluginToCache(version);
           return `Plugin cached (v${version}) ${styleText('green', 'OK')}`;
-        },
-      },
-      {
-        title: 'Registering marketplace',
-        task: async () => {
-          registerMarketplace();
-          return `Marketplace registered ${styleText('green', 'OK')}`;
-        },
-      },
-      {
-        title: 'Registering plugin',
-        task: async () => {
-          registerPlugin(version);
-          return `Plugin registered ${styleText('green', 'OK')}`;
-        },
-      },
-      {
-        title: 'Enabling plugin in Claude settings',
-        task: async () => {
-          enablePluginInClaudeSettings();
-          return `Plugin enabled ${styleText('green', 'OK')}`;
         },
       },
       {
@@ -1608,79 +1000,13 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
       },
     ];
 
-    if (needsMarketplace) {
-      tasks.unshift({
-        title: 'Copying plugin files to marketplace',
-        task: async (message) => {
-          message('Copying to marketplace directory...');
-          copyPluginToMarketplace();
-          return `Plugin files copied ${styleText('green', 'OK')}`;
-        },
-      });
-      tasks.push({
-        title: 'Installing marketplace dependencies',
-        task: async (message) => {
-          // runNpmInstallInMarketplace throws InstallAbortError on a real
-          // failure (non-ERESOLVE, or ERESOLVE that --legacy-peer-deps could
-          // not fix). We deliberately do NOT swallow it here — the top-level
-          // handler turns it into "Installation Aborted" + exit 1.
-          const stopHeartbeat = startHeartbeat(message, 'Running npm install…');
-          try {
-            await runNpmInstallInMarketplace(summary);
-            writeInstallMarker(
-              marketplaceDirectory(),
-              version,
-              installedBunVersion ?? 'unknown',
-              installedUvVersion ?? 'unknown',
-            );
-          } finally {
-            stopHeartbeat();
-          }
-          return `Dependencies installed ${styleText('green', 'OK')}`;
-        },
-      });
-    }
-
     await runTasks(tasks);
   }
 
   const failedIDEs = await setupIDEs(selectedIDEs, summary);
 
-  // Optionally disable Claude Code's built-in auto-memory (CLAUDE_CODE_DISABLE_AUTO_MEMORY=1)
-  // when the user explicitly opts in, either through the interactive prompt or
-  // via --disable-auto-memory. claude-mem's hook-based memory is the intended
-  // source of cross-session context, but we no longer mutate settings.json silently.
-  // Four-state so the summary can distinguish "wrote", "already set", "left enabled",
-  // and "failed". A boolean would conflate the error path with a deliberate no-op.
-  let autoMemoryStatus: 'disabled' | 'already-disabled' | 'left-enabled' | 'failed' | null = null;
-  const autoMemoryChoice = await resolveClaudeAutoMemoryChoice(selectedIDEs, options);
-  if (autoMemoryChoice === 'disable') {
-    try {
-      const wrote = disableClaudeAutoMemory();
-      autoMemoryStatus = wrote ? 'disabled' : 'already-disabled';
-      if (wrote) {
-        log.success('Claude Code: auto-memory disabled (CLAUDE_CODE_DISABLE_AUTO_MEMORY=1).');
-      } else {
-        log.info('Claude Code: auto-memory already disabled, leaving settings.json untouched.');
-      }
-    } catch (error: unknown) {
-      // Don't fail the install over this — WARN_CONTINUE via the central handler.
-      autoMemoryStatus = 'failed';
-      const err = error instanceof Error ? error : new Error(String(error));
-      // [ANTI-PATTERN IGNORED]: recorded via installerError(WARN_CONTINUE) and flushed after the spinners; a direct console call would be clobbered by the clack UI.
-      installerError(ErrorSeverity.WARN_CONTINUE, {
-        component: 'auto-memory',
-        phase: 'post-ide',
-        cause: err,
-      }, summary);
-    }
-  } else if (autoMemoryChoice === 'leave-enabled') {
-    autoMemoryStatus = 'left-enabled';
-    log.info('Claude Code: leaving native auto-memory enabled unless you explicitly opt in to disabling it.');
-  }
-
   // The server runtime is brought up via its own stack (Docker pg+redis +
-  // `claude-mem server start`), NOT the worker-service spawner. Skip the
+  // `opencode-mem server start`), NOT the worker-service spawner. Skip the
   // worker-only autostart entirely so the server runtime never invokes the
   // worker path (#2543).
   const autoStartSkipped = !isInteractive || options.noAutoStart || selectedRuntime === 'server';
@@ -1690,14 +1016,14 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
       title: selectedRuntime === 'server' ? 'Starting server daemon' : 'Starting worker daemon',
       task: async (message) => {
         if (selectedRuntime === 'server') {
-          return `Server runtime selected — start it with ${styleText('bold', 'npx claude-mem server start')} ${styleText('dim', '(or via Docker compose)')}`;
+          return `Server runtime selected — start it with ${styleText('bold', 'npx opencode-mem server start')} ${styleText('dim', '(or via Docker compose)')}`;
         }
         if (autoStartSkipped) {
           return isInteractive
             ? `Skipped (--no-auto-start)`
             : `Skipped (non-TTY)`;
         }
-        const port = Number(getSetting('CLAUDE_MEM_WORKER_PORT'));
+        const port = Number(getSetting('OPENCODE_MEM_WORKER_PORT'));
         const marketplaceScriptPath = join(marketplaceDirectory(), 'plugin', 'scripts', 'worker-service.cjs');
         const cacheScriptPath = join(pluginCacheDirectory(version), 'scripts', 'worker-service.cjs');
         const scriptPath = existsSync(marketplaceScriptPath) ? marketplaceScriptPath : cacheScriptPath;
@@ -1711,7 +1037,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
           case 'warming':
             return `Worker starting on port ${port} — finishing in background ${styleText('yellow', '⏳')}`;
           case 'dead':
-            return `Worker did not start — try \`npx claude-mem start\` manually ${styleText('yellow', '!')}`;
+            return `Worker did not start — try \`npx opencode-mem start\` manually ${styleText('yellow', '!')}`;
         }
       },
     },
@@ -1728,15 +1054,6 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
     `Plugin dir:  ${styleText('cyan', marketplaceDir)}`,
     `IDEs:        ${styleText('cyan', selectedIDEs.join(', '))}`,
   ];
-  if (autoMemoryStatus === 'disabled') {
-    summaryLines.push(`Auto-memory: ${styleText('cyan', 'disabled')} (CLAUDE_CODE_DISABLE_AUTO_MEMORY=1)`);
-  } else if (autoMemoryStatus === 'already-disabled') {
-    summaryLines.push(`Auto-memory: ${styleText('cyan', 'already disabled')} (CLAUDE_CODE_DISABLE_AUTO_MEMORY=1)`);
-  } else if (autoMemoryStatus === 'left-enabled') {
-    summaryLines.push(`Auto-memory: ${styleText('cyan', 'left enabled')} (native Claude Code memory preserved)`);
-  } else if (autoMemoryStatus === 'failed') {
-    summaryLines.push(`Auto-memory: ${styleText('red', 'write failed')} (see warning above)`);
-  }
   if (failedIDEs.length > 0) {
     summaryLines.push(`Failed:      ${styleText('red', failedIDEs.join(', '))}`);
   }
@@ -1752,9 +1069,9 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   // spinners and summary note (a live print would be clobbered by clack).
   flushSummary(summary, (line) => (isInteractive ? p.log.message(line) : console.log(`  ${line}`)));
 
-  const workerHost = getSetting('CLAUDE_MEM_WORKER_HOST');
+  const workerHost = getSetting('OPENCODE_MEM_WORKER_HOST');
   const workerUrlHost = formatHostForUrl(workerHost);
-  const workerPort = getSetting('CLAUDE_MEM_WORKER_PORT');
+  const workerPort = getSetting('OPENCODE_MEM_WORKER_PORT');
 
   let actualPort: number | string = workerPort;
   let workerReady = false;
@@ -1793,7 +1110,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   const finalWorkerState = workerStartResult as WorkerStartResult;
   const workerAlive = finalWorkerState !== 'dead' || workerReady;
   const runtimeLabel = selectedRuntime === 'server' ? 'Server' : 'Worker';
-  const runtimeStartCommand = selectedRuntime === 'server' ? 'npx claude-mem server start' : 'npx claude-mem start';
+  const runtimeStartCommand = selectedRuntime === 'server' ? 'npx opencode-mem server start' : 'npx opencode-mem start';
   const workerBaseUrl = `http://${workerUrlHost}:${actualPort}`;
   const configuredWorkerBaseUrl = `http://${workerUrlHost}:${workerPort}`;
   const workerHeadline = autoStartSkipped
@@ -1803,7 +1120,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
       : `${styleText('yellow', '⏳')} ${runtimeLabel} starting at ${styleText('underline', workerBaseUrl)} — give it ~30s, then refresh`;
   const nextStepsHeadline = autoStartSkipped || workerAlive
     ? workerHeadline
-    : `${styleText('yellow', '!')} Worker not yet ready on port ${styleText('cyan', String(workerPort))} -- still starting up; check ${styleText('bold', 'claude-mem status')} later, or start manually: ${styleText('bold', 'npx claude-mem start')}`;
+    : `${styleText('yellow', '!')} Worker not yet ready on port ${styleText('cyan', String(workerPort))} -- still starting up; check ${styleText('bold', 'opencode-mem status')} later, or start manually: ${styleText('bold', 'npx opencode-mem start')}`;
   const firstSuccessOpener = autoStartSkipped
     ? `once the worker is running, keep ${styleText('underline', configuredWorkerBaseUrl)} open in a browser`
     : workerAlive
@@ -1812,17 +1129,17 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   const nextSteps = [
     nextStepsHeadline,
     ``,
-    `${styleText('bold', 'First success:')} ${firstSuccessOpener}, then open Claude Code in any project. Observations stream in as Claude reads, edits, and runs commands.`,
+    `${styleText('bold', 'First success:')} ${firstSuccessOpener}, then open OpenCode in any project. Observations stream in as OpenCode reads, edits, and runs commands.`,
     ``,
     `${styleText('bold', 'Two paths from here:')}`,
     `  ${styleText('cyan', 'A.')} Just start working. Memory builds passively from your first prompt. (Recommended.)`,
-    `  ${styleText('cyan', 'B.')} Front-load it: open Claude Code and run ${styleText('bold', '/learn-codebase')} to ingest the whole repo (~5 min, optional).`,
+    `  ${styleText('cyan', 'B.')} Front-load it: open OpenCode and run ${styleText('bold', '/learn-codebase')} to ingest the whole repo (~5 min, optional).`,
     ``,
     `Memory injection starts on your second session in a project.`,
-    `Everything stays in ${styleText('cyan', '~/.claude-mem')} on this machine.`,
+    `Everything stays in ${styleText('cyan', '~/.opencode-mem')} on this machine.`,
     ``,
-    `${styleText('dim', 'How it works: /how-it-works   ·   Disable first-session hint: CLAUDE_MEM_WELCOME_HINT_ENABLED=false')}`,
-    `${styleText('dim', 'Note: close all Claude Code sessions before uninstalling, or ~/.claude-mem will be recreated by active hooks.')}`,
+    `${styleText('dim', 'How it works: /how-it-works   ·   Disable first-session hint: OPENCODE_MEM_WELCOME_HINT_ENABLED=false')}`,
+    `${styleText('dim', 'Note: close all OpenCode sessions before uninstalling, or ~/.opencode-mem will be recreated by active hooks.')}`,
   ];
 
   if (isInteractive) {
@@ -1831,18 +1148,18 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
     // the product is installed and working, never as a gate in front of it.
     await promptTelemetryOptIn();
     if (failedIDEs.length > 0) {
-      p.outro(styleText('yellow', 'claude-mem installed with some IDE setup failures.'));
+      p.outro(styleText('yellow', 'opencode-mem installed with some IDE setup failures.'));
     } else {
-      p.outro(styleText('green', 'claude-mem installed successfully!'));
+      p.outro(styleText('green', 'opencode-mem installed successfully!'));
     }
   } else {
     console.log('\n  Next Steps');
     nextSteps.forEach(l => console.log(`  ${l}`));
     if (failedIDEs.length > 0) {
-      console.log('\nclaude-mem installed with some IDE setup failures.');
+      console.log('\nopencode-mem installed with some IDE setup failures.');
       process.exitCode = 1;
     } else {
-      console.log('\nclaude-mem installed successfully!');
+      console.log('\nopencode-mem installed successfully!');
     }
   }
 
@@ -1860,7 +1177,6 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
     install_method: detectInstallMethod(),
     bun_version: installedBunVersion,
     uv_version: installedUvVersion,
-    claude_code_version: detectClaudeCodeVersion(),
   }, { person: true });
 }
 
@@ -1872,9 +1188,9 @@ async function runRepairCommandInner(summary: InstallSummary): Promise<void> {
   let uvVersion = 'unknown';
 
   if (isInteractive) {
-    p.intro(styleText(['bgCyan', 'black'], ' claude-mem repair '));
+    p.intro(styleText(['bgCyan', 'black'], ' opencode-mem repair '));
   } else {
-    console.log('claude-mem repair');
+    console.log('opencode-mem repair');
   }
   log.info(`Version: ${styleText('cyan', version)}`);
 
@@ -1923,9 +1239,9 @@ async function runRepairCommandInner(summary: InstallSummary): Promise<void> {
   flushSummary(summary, (line) => (isInteractive ? p.log.message(line) : console.log(`  ${line}`)));
 
   if (isInteractive) {
-    p.outro(styleText('green', 'claude-mem repair complete.'));
+    p.outro(styleText('green', 'opencode-mem repair complete.'));
   } else {
-    console.log('claude-mem repair complete.');
+    console.log('opencode-mem repair complete.');
   }
 }
 
@@ -1941,7 +1257,7 @@ export async function runRepairCommand(): Promise<void> {
       if (isInteractive) {
         p.log.error(headline);
         p.log.error(err.remediation);
-        p.outro(styleText('red', 'claude-mem repair aborted.'));
+        p.outro(styleText('red', 'opencode-mem repair aborted.'));
       } else {
         console.error(`\n  ${headline}`);
         console.error(`  ${err.remediation}`);

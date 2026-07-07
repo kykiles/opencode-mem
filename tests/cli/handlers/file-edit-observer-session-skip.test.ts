@@ -9,22 +9,22 @@ const realSettingsSnapshot = { ...realSettingsDefaultsManager };
 const realHookSettingsSnapshot = { ...realHookSettings };
 const realWorkerUtilsSnapshot = { ...realWorkerUtils };
 
-const dataDir = join(tmpdir(), 'claude-mem-file-edit-observer-test');
+const dataDir = join(tmpdir(), 'opencode-mem-file-edit-observer-test');
 const workerCallLog: Array<{ path: string; method: string; body: unknown }> = [];
 
 mock.module('../../../src/shared/SettingsDefaultsManager.js', () => ({
   SettingsDefaultsManager: {
     get: (key: string) => {
-      if (key === 'CLAUDE_MEM_DATA_DIR') return dataDir;
+      if (key === 'OPENCODE_MEM_DATA_DIR') return dataDir;
       return '';
     },
     getInt: () => 0,
-    loadFromFile: () => ({ CLAUDE_MEM_EXCLUDED_PROJECTS: '' }),
+    loadFromFile: () => ({ OPENCODE_MEM_EXCLUDED_PROJECTS: '' }),
   },
 }));
 
 mock.module('../../../src/shared/hook-settings.js', () => ({
-  loadFromFileOnce: () => ({ CLAUDE_MEM_EXCLUDED_PROJECTS: '' }),
+  loadFromFileOnce: () => ({ OPENCODE_MEM_EXCLUDED_PROJECTS: '' }),
 }));
 
 mock.module('../../../src/shared/worker-utils.js', () => ({

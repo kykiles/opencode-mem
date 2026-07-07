@@ -6,8 +6,7 @@ import {
   isQuotaLimitedObserverOutput,
   previewOutput,
 } from '../../../sdk/output-classifier.js';
-import { updateCursorContextForProject } from '../../integrations/CursorHooksInstaller.js';
-import { notifyTelegram } from '../../integrations/TelegramNotifier.js';
+
 import { updateFolderClaudeMdFiles } from '../../../utils/claude-md-utils.js';
 import { getWorkerPort } from '../../../shared/worker-utils.js';
 import { SettingsDefaultsManager } from '../../../shared/SettingsDefaultsManager.js';
@@ -211,12 +210,6 @@ export async function processAgentResponse(
   session.earliestPendingTimestamp = null;
   worker?.broadcastProcessingStatus?.();
 
-  void notifyTelegram({
-    observations: labeledObservations,
-    observationIds: result.observationIds,
-    project: session.project,
-    memorySessionId: session.memorySessionId,
-  });
 
   await syncAndBroadcastObservations(
     observations,
@@ -338,7 +331,7 @@ async function syncAndBroadcastObservations(
   }
 
   const settings = SettingsDefaultsManager.loadFromFile(USER_SETTINGS_PATH);
-  const settingValue: unknown = settings.CLAUDE_MEM_FOLDER_CLAUDEMD_ENABLED;
+  const settingValue: unknown = settings.OPENCODE_MEM_FOLDER_CLAUDEMD_ENABLED;
   const folderClaudeMdEnabled = settingValue === 'true' || settingValue === true;
 
   if (folderClaudeMdEnabled) {
@@ -417,7 +410,4 @@ async function syncAndBroadcastSummary(
     created_at_epoch: result.createdAtEpoch
   });
 
-  updateCursorContextForProject(session.project).catch(error => {
-    logger.warn('CURSOR', 'Context update failed (non-critical)', { project: session.project }, error as Error);
-  });
 }

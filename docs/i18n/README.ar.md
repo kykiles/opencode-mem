@@ -4,11 +4,11 @@
 
 <h1 align="center">
   <br>
-  <a href="https://github.com/thedotmack/claude-mem">
+  <a href="https://github.com/kykiles/opencode-mem">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-dark-mode.webp">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-light-mode.webp">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-light-mode.webp" alt="Claude-Mem" width="400">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-dark-mode.webp">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp">
+      <img src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp" alt="Claude-Mem" width="400">
     </picture>
   </a>
   <br>
@@ -72,9 +72,9 @@
 <p align="center">
   <a href="https://trendshift.io/repositories/15496" target="_blank">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg" alt="thedotmack/claude-mem | Trendshift" width="250" height="55"/>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge.svg">
+      <img src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge.svg" alt="kykiles/opencode-mem | Trendshift" width="250" height="55"/>
     </picture>
   </a>
 </p>
@@ -84,10 +84,10 @@
 <table align="center">
   <tr>
     <td align="center">
-      <a href="https://github.com/thedotmack/claude-mem">
+      <a href="https://github.com/kykiles/opencode-mem">
         <picture>
           <img
-            src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/cm-preview.gif"
+            src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/cm-preview.gif"
             alt="Claude-Mem Preview"
             width="500"
           >
@@ -95,19 +95,19 @@
       </a>
     </td>
     <td align="center">
-      <a href="https://www.star-history.com/#thedotmack/claude-mem&Date">
+      <a href="https://www.star-history.com/#kykiles/opencode-mem&Date">
         <picture>
           <source
             media="(prefers-color-scheme: dark)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&theme=dark&legend=top-left"
+            srcset="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&theme=dark&legend=top-left"
           />
           <source
             media="(prefers-color-scheme: light)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
+            srcset="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&legend=top-left"
           />
           <img
             alt="Star History Chart"
-            src="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
+            src="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&legend=top-left"
             width="500"
           />
         </picture>
@@ -137,42 +137,42 @@
 قم بالتثبيت بأمر واحد:
 
 ```bash
-npx claude-mem install
+npx opencode-mem install
 ```
 
 أو قم بالتثبيت لـ OpenCode:
 
 ```bash
-npx claude-mem install --ide opencode
+npx opencode-mem install --ide opencode
 ```
 
-أو قم بالتثبيت لـ Antigravity CLI ([دليل الإعداد](https://docs.claude-mem.ai/antigravity-cli/setup)):
+أو قم بالتثبيت لـ Antigravity CLI ([دليل الإعداد](https://docs.opencode-mem.ai/antigravity-cli/setup)):
 
 ```bash
-npx claude-mem install --ide antigravity
+npx opencode-mem install --ide antigravity
 ```
 
 أو قم بالتثبيت من متجر الإضافات (plugin marketplace) داخل Claude Code:
 
 ```bash
-/plugin marketplace add thedotmack/claude-mem
+/plugin marketplace add kykiles/opencode-mem
 
-/plugin install claude-mem
+/plugin install opencode-mem
 ```
 
 أعد تشغيل Claude Code. سيظهر السياق من الجلسات السابقة تلقائياً في الجلسات الجديدة.
 
-> **ملاحظة:** يُنشر Claude-Mem أيضاً على npm، إلا أن الأمر `npm install -g claude-mem` يُثبّت **حزمة الـ SDK/المكتبة فقط** — ولا يقوم بتسجيل خطافات الإضافة (plugin hooks) ولا بإعداد خدمة العامل (worker service). قم دائماً بالتثبيت عبر `npx claude-mem install` أو أوامر `/plugin` المذكورة أعلاه.
+> **ملاحظة:** يُنشر Claude-Mem أيضاً على npm، إلا أن الأمر `npm install -g opencode-mem` يُثبّت **حزمة الـ SDK/المكتبة فقط** — ولا يقوم بتسجيل خطافات الإضافة (plugin hooks) ولا بإعداد خدمة العامل (worker service). قم دائماً بالتثبيت عبر `npx opencode-mem install` أو أوامر `/plugin` المذكورة أعلاه.
 
 ### 🦞 بوابة OpenClaw (OpenClaw Gateway)
 
-قم بتثبيت claude-mem كإضافة ذاكرة دائمة على بوابات [OpenClaw](https://openclaw.ai) بأمر واحد:
+قم بتثبيت opencode-mem كإضافة ذاكرة دائمة على بوابات [OpenClaw](https://openclaw.ai) بأمر واحد:
 
 ```bash
 curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 ```
 
-يتولى برنامج التثبيت التبعيات، وإعداد الإضافة، وتهيئة مزوّد الذكاء الاصطناعي، وتشغيل العامل (worker)، بالإضافة إلى بثّ اختياري للملاحظات في الوقت الفعلي إلى Telegram وDiscord وSlack وغيرها. راجع [دليل تكامل OpenClaw](https://docs.claude-mem.ai/openclaw-integration) للتفاصيل.
+يتولى برنامج التثبيت التبعيات، وإعداد الإضافة، وتهيئة مزوّد الذكاء الاصطناعي، وتشغيل العامل (worker)، بالإضافة إلى بثّ اختياري للملاحظات في الوقت الفعلي إلى Telegram وDiscord وSlack وغيرها. راجع [دليل تكامل OpenClaw](https://docs.opencode-mem.ai/openclaw-integration) للتفاصيل.
 
 **الميزات الرئيسية:**
 
@@ -190,35 +190,35 @@ curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 
 ## المستندات
 
-📚 **[عرض التوثيق الكامل](https://docs.claude-mem.ai/)** - تصفح على الموقع الرسمي
+📚 **[عرض التوثيق الكامل](https://docs.opencode-mem.ai/)** - تصفح على الموقع الرسمي
 
 ### البدء
 
-- **[دليل التثبيت](https://docs.claude-mem.ai/installation)** - البدء السريع والتثبيت المتقدم
-- **[دليل الاستخدام](https://docs.claude-mem.ai/usage/getting-started)** - كيف يعمل Claude-Mem تلقائياً
-- **[أدوات البحث](https://docs.claude-mem.ai/usage/search-tools)** - استعلم عن سجل مشروعك باللغة الطبيعية
+- **[دليل التثبيت](https://docs.opencode-mem.ai/installation)** - البدء السريع والتثبيت المتقدم
+- **[دليل الاستخدام](https://docs.opencode-mem.ai/usage/getting-started)** - كيف يعمل Claude-Mem تلقائياً
+- **[أدوات البحث](https://docs.opencode-mem.ai/usage/search-tools)** - استعلم عن سجل مشروعك باللغة الطبيعية
 
 ### أفضل الممارسات
 
-- **[هندسة السياق](https://docs.claude-mem.ai/context-engineering)** - مبادئ تحسين سياق وكيل الذكاء الاصطناعي
-- **[الكشف التدريجي](https://docs.claude-mem.ai/progressive-disclosure)** - الفلسفة وراء استراتيجية تهيئة السياق في Claude-Mem
+- **[هندسة السياق](https://docs.opencode-mem.ai/context-engineering)** - مبادئ تحسين سياق وكيل الذكاء الاصطناعي
+- **[الكشف التدريجي](https://docs.opencode-mem.ai/progressive-disclosure)** - الفلسفة وراء استراتيجية تهيئة السياق في Claude-Mem
 
 ### البنية المعمارية
 
-- **[نظرة عامة](https://docs.claude-mem.ai/architecture/overview)** - مكونات النظام وتدفق البيانات
-- **[تطور البنية المعمارية](https://docs.claude-mem.ai/architecture-evolution)** - رحلة التطور من v3 إلى v5
-- **[بنية برامج الربط (Hooks)](https://docs.claude-mem.ai/hooks-architecture)** - كيف يستخدم Claude-Mem خطافات دورة الحياة
-- **[مرجع برامج الربط (Hooks)](https://docs.claude-mem.ai/architecture/hooks)** - شرح 7 سكريبتات خطافات
-- **[خدمة العامل](https://docs.claude-mem.ai/architecture/worker-service)** - واجهة HTTP API وإدارة Bun
-- **[قاعدة البيانات](https://docs.claude-mem.ai/architecture/database)** - مخطط SQLite وبحث FTS5
-- **[بنية البحث](https://docs.claude-mem.ai/architecture/search-architecture)** - البحث الهجين مع قاعدة بيانات المتجهات Chroma
+- **[نظرة عامة](https://docs.opencode-mem.ai/architecture/overview)** - مكونات النظام وتدفق البيانات
+- **[تطور البنية المعمارية](https://docs.opencode-mem.ai/architecture-evolution)** - رحلة التطور من v3 إلى v5
+- **[بنية برامج الربط (Hooks)](https://docs.opencode-mem.ai/hooks-architecture)** - كيف يستخدم Claude-Mem خطافات دورة الحياة
+- **[مرجع برامج الربط (Hooks)](https://docs.opencode-mem.ai/architecture/hooks)** - شرح 7 سكريبتات خطافات
+- **[خدمة العامل](https://docs.opencode-mem.ai/architecture/worker-service)** - واجهة HTTP API وإدارة Bun
+- **[قاعدة البيانات](https://docs.opencode-mem.ai/architecture/database)** - مخطط SQLite وبحث FTS5
+- **[بنية البحث](https://docs.opencode-mem.ai/architecture/search-architecture)** - البحث الهجين مع قاعدة بيانات المتجهات Chroma
 
 ### الإعدادات والتطوير
 
-- **[الإعدادات](https://docs.claude-mem.ai/configuration)** - متغيرات البيئة والإعدادات
-- **[التطوير](https://docs.claude-mem.ai/development)** - البناء، الاختبار، والمساهمة
-- **[فروع الإصدارات](https://docs.claude-mem.ai/branches)** - تدفق فروع Stable وcore-dev وcommunity-edge
-- **[استكشاف الأخطاء وإصلاحها](https://docs.claude-mem.ai/troubleshooting)** - المشكلات الشائعة والحلول
+- **[الإعدادات](https://docs.opencode-mem.ai/configuration)** - متغيرات البيئة والإعدادات
+- **[التطوير](https://docs.opencode-mem.ai/development)** - البناء، الاختبار، والمساهمة
+- **[فروع الإصدارات](https://docs.opencode-mem.ai/branches)** - تدفق فروع Stable وcore-dev وcommunity-edge
+- **[استكشاف الأخطاء وإصلاحها](https://docs.opencode-mem.ai/troubleshooting)** - المشكلات الشائعة والحلول
 
 ---
 
@@ -233,7 +233,7 @@ curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 5. **مهارة mem-search** - استعلامات باللغة الطبيعية مع الكشف التدريجي
 6. **قاعدة بيانات المتجهات Chroma** - بحث هجين دلالي + بالكلمات المفتاحية لاسترجاع سياق ذكي
 
-راجع [نظرة عامة على البنية المعمارية](https://docs.claude-mem.ai/architecture/overview) للتفاصيل.
+راجع [نظرة عامة على البنية المعمارية](https://docs.opencode-mem.ai/architecture/overview) للتفاصيل.
 
 ---
 
@@ -272,13 +272,13 @@ search(query="authentication bug", type="bugfix", limit=10)
 get_observations(ids=[123, 456])
 ```
 
-راجع [دليل أدوات البحث](https://docs.claude-mem.ai/usage/search-tools) لأمثلة مفصلة.
+راجع [دليل أدوات البحث](https://docs.opencode-mem.ai/usage/search-tools) لأمثلة مفصلة.
 
 ---
 
 ## فروع الإصدارات
 
-يتم إصدار النسخ المستقرة من فرع `main` ونشرها على npm. أما `core-dev` و`community-edge` فهما فرعان يتم تشغيلهما من المصدر لإصلاحات الموثوقية المبكرة وتكاملات المجتمع. راجع **[فروع الإصدارات](https://docs.claude-mem.ai/branches)** لمعرفة تدفق الفروع وتعليمات التشغيل غير المستقر.
+يتم إصدار النسخ المستقرة من فرع `main` ونشرها على npm. أما `core-dev` و`community-edge` فهما فرعان يتم تشغيلهما من المصدر لإصلاحات الموثوقية المبكرة وتكاملات المجتمع. راجع **[فروع الإصدارات](https://docs.opencode-mem.ai/branches)** لمعرفة تدفق الفروع وتعليمات التشغيل غير المستقر.
 
 ---
 
@@ -305,13 +305,13 @@ npm : The term 'npm' is not recognized as the name of a cmdlet
 
 ## الإعدادات
 
-تتم إدارة الإعدادات في `~/.claude-mem/settings.json` (يُنشأ تلقائياً بالقيم الافتراضية عند التشغيل الأول). قم بتهيئة نموذج الذكاء الاصطناعي، ومنفذ العامل (worker port)، ودليل البيانات، ومستوى السجل (log level)، وإعدادات حقن السياق.
+تتم إدارة الإعدادات في `~/.opencode-mem/settings.json` (يُنشأ تلقائياً بالقيم الافتراضية عند التشغيل الأول). قم بتهيئة نموذج الذكاء الاصطناعي، ومنفذ العامل (worker port)، ودليل البيانات، ومستوى السجل (log level)، وإعدادات حقن السياق.
 
-راجع **[دليل الإعدادات](https://docs.claude-mem.ai/configuration)** لجميع الإعدادات المتاحة والأمثلة.
+راجع **[دليل الإعدادات](https://docs.opencode-mem.ai/configuration)** لجميع الإعدادات المتاحة والأمثلة.
 
 ### إعدادات الوضع واللغة
 
-يدعم Claude-Mem أوضاع سير عمل ولغات متعددة عبر إعداد `CLAUDE_MEM_MODE`.
+يدعم Claude-Mem أوضاع سير عمل ولغات متعددة عبر إعداد `OPENCODE_MEM_MODE`.
 
 يتحكم هذا الخيار في كلا الأمرين:
 - سلوك سير العمل (مثل code وchill وinvestigation)
@@ -319,11 +319,11 @@ npm : The term 'npm' is not recognized as the name of a cmdlet
 
 #### كيفية الإعداد
 
-قم بتحرير ملف الإعدادات الخاص بك في `~/.claude-mem/settings.json`:
+قم بتحرير ملف الإعدادات الخاص بك في `~/.opencode-mem/settings.json`:
 
 ```json
 {
-  "CLAUDE_MEM_MODE": "code--zh"
+  "OPENCODE_MEM_MODE": "code--zh"
 }
 ```
 
@@ -353,7 +353,7 @@ ls ~/.claude/plugins/marketplaces/thedotmack/plugin/modes/
 
 ## التطوير
 
-راجع **[دليل التطوير](https://docs.claude-mem.ai/development)** لتعليمات البناء، والاختبار، وسير عمل المساهمة.
+راجع **[دليل التطوير](https://docs.opencode-mem.ai/development)** لتعليمات البناء، والاختبار، وسير عمل المساهمة.
 
 ---
 
@@ -361,7 +361,7 @@ ls ~/.claude/plugins/marketplaces/thedotmack/plugin/modes/
 
 إذا واجهت مشكلات، اشرح المشكلة لـ Claude وستقوم مهارة troubleshoot تلقائياً بتشخيصها وتقديم الحلول.
 
-راجع **[دليل استكشاف الأخطاء وإصلاحها](https://docs.claude-mem.ai/troubleshooting)** للمشكلات الشائعة والحلول.
+راجع **[دليل استكشاف الأخطاء وإصلاحها](https://docs.opencode-mem.ai/troubleshooting)** للمشكلات الشائعة والحلول.
 
 ---
 
@@ -384,9 +384,9 @@ npm run bug-report
 4. تحديث المستندات
 5. تقديم Pull Request
 
-يتم إصدار Claude-Mem من ثلاثة فروع: `main` (المستقر)، و`core-dev`، و`community-edge`. يُنشر `main` فقط على npm؛ أما الفروع الأخرى فيتم تشغيلها من المصدر. راجع [فروع الإصدارات](https://docs.claude-mem.ai/branches) للاطلاع على الاستراتيجية وتعليمات التشغيل المحلي.
+يتم إصدار Claude-Mem من ثلاثة فروع: `main` (المستقر)، و`core-dev`، و`community-edge`. يُنشر `main` فقط على npm؛ أما الفروع الأخرى فيتم تشغيلها من المصدر. راجع [فروع الإصدارات](https://docs.opencode-mem.ai/branches) للاطلاع على الاستراتيجية وتعليمات التشغيل المحلي.
 
-راجع [دليل التطوير](https://docs.claude-mem.ai/development) لسير عمل المساهمة.
+راجع [دليل التطوير](https://docs.opencode-mem.ai/development) لسير عمل المساهمة.
 
 ---
 
@@ -406,8 +406,8 @@ Claude-Mem مرخّص بموجب رخصة Apache 2.0.
 ## الدعم
 
 - **التوثيق**: [docs/](docs/)
-- **المشكلات**: [GitHub Issues](https://github.com/thedotmack/claude-mem/issues)
-- **المستودع**: [github.com/thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)
+- **المشكلات**: [GitHub Issues](https://github.com/kykiles/opencode-mem/issues)
+- **المستودع**: [github.com/kykiles/opencode-mem](https://github.com/kykiles/opencode-mem)
 - **حساب X الرسمي**: [@Claude_Memory](https://x.com/Claude_Memory)
 - **Discord الرسمي**: [انضم إلى Discord](https://discord.com/invite/J4wttp9vDu)
 - **المؤلف**: Alex Newman ([@thedotmack](https://github.com/thedotmack))

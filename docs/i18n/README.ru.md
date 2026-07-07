@@ -2,11 +2,11 @@
 
 <h1 align="center">
   <br>
-  <a href="https://github.com/thedotmack/claude-mem">
+  <a href="https://github.com/kykiles/opencode-mem">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-dark-mode.webp">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-light-mode.webp">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/claude-mem-logo-for-light-mode.webp" alt="Claude-Mem" width="400">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-dark-mode.webp">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp">
+      <img src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp" alt="Claude-Mem" width="400">
     </picture>
   </a>
   <br>
@@ -70,9 +70,9 @@
 <p align="center">
   <a href="https://trendshift.io/repositories/15496" target="_blank">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg" alt="thedotmack/claude-mem | Trendshift" width="250" height="55"/>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge.svg">
+      <img src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/trendshift-badge.svg" alt="kykiles/opencode-mem | Trendshift" width="250" height="55"/>
     </picture>
   </a>
 </p>
@@ -82,10 +82,10 @@
 <table align="center">
   <tr>
     <td align="center">
-      <a href="https://github.com/thedotmack/claude-mem">
+      <a href="https://github.com/kykiles/opencode-mem">
         <picture>
           <img
-            src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/cm-preview.gif"
+            src="https://raw.githubusercontent.com/kykiles/opencode-mem/main/docs/public/cm-preview.gif"
             alt="Claude-Mem Preview"
             width="500"
           >
@@ -93,19 +93,19 @@
       </a>
     </td>
     <td align="center">
-      <a href="https://www.star-history.com/#thedotmack/claude-mem&Date">
+      <a href="https://www.star-history.com/#kykiles/opencode-mem&Date">
         <picture>
           <source
             media="(prefers-color-scheme: dark)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&theme=dark&legend=top-left"
+            srcset="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&theme=dark&legend=top-left"
           />
           <source
             media="(prefers-color-scheme: light)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
+            srcset="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&legend=top-left"
           />
           <img
             alt="Star History Chart"
-            src="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
+            src="https://api.star-history.com/image?repos=kykiles/opencode-mem&type=date&legend=top-left"
             width="500"
           />
         </picture>
@@ -135,42 +135,42 @@
 Установите одной командой:
 
 ```bash
-npx claude-mem install
+npx opencode-mem install
 ```
 
 Или установите для OpenCode:
 
 ```bash
-npx claude-mem install --ide opencode
+npx opencode-mem install --ide opencode
 ```
 
-Или установите для Antigravity CLI ([руководство по настройке](https://docs.claude-mem.ai/antigravity-cli/setup)):
+Или установите для Antigravity CLI ([руководство по настройке](https://docs.opencode-mem.ai/antigravity-cli/setup)):
 
 ```bash
-npx claude-mem install --ide antigravity
+npx opencode-mem install --ide antigravity
 ```
 
 Или установите из маркетплейса плагинов внутри Claude Code:
 
 ```bash
-/plugin marketplace add thedotmack/claude-mem
+/plugin marketplace add kykiles/opencode-mem
 
-/plugin install claude-mem
+/plugin install opencode-mem
 ```
 
 Перезапустите Claude Code. Контекст из предыдущих сеансов будет автоматически появляться в новых сеансах.
 
-> **Примечание:** Claude-Mem также опубликован на npm, но `npm install -g claude-mem` устанавливает **только SDK/библиотеку** — это не регистрирует хуки плагина и не настраивает сервис worker. Всегда устанавливайте через `npx claude-mem install` или команды `/plugin`, указанные выше.
+> **Примечание:** Claude-Mem также опубликован на npm, но `npm install -g opencode-mem` устанавливает **только SDK/библиотеку** — это не регистрирует хуки плагина и не настраивает сервис worker. Всегда устанавливайте через `npx opencode-mem install` или команды `/plugin`, указанные выше.
 
 ### 🦞 OpenClaw Gateway
 
-Установите claude-mem как плагин постоянной памяти на шлюзах [OpenClaw](https://openclaw.ai) одной командой:
+Установите opencode-mem как плагин постоянной памяти на шлюзах [OpenClaw](https://openclaw.ai) одной командой:
 
 ```bash
 curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 ```
 
-Установщик берёт на себя зависимости, настройку плагина, конфигурацию AI-провайдера, запуск worker и опциональные потоки наблюдений в реальном времени в Telegram, Discord, Slack и другие сервисы. Подробности см. в [Руководстве по интеграции OpenClaw](https://docs.claude-mem.ai/openclaw-integration).
+Установщик берёт на себя зависимости, настройку плагина, конфигурацию AI-провайдера, запуск worker и опциональные потоки наблюдений в реальном времени в Telegram, Discord, Slack и другие сервисы. Подробности см. в [Руководстве по интеграции OpenClaw](https://docs.opencode-mem.ai/openclaw-integration).
 
 **Ключевые возможности:**
 
@@ -188,35 +188,35 @@ curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 
 ## Документация
 
-📚 **[Просмотреть полную документацию](https://docs.claude-mem.ai/)** - Просмотр на официальном сайте
+📚 **[Просмотреть полную документацию](https://docs.opencode-mem.ai/)** - Просмотр на официальном сайте
 
 ### Начало работы
 
-- **[Руководство по установке](https://docs.claude-mem.ai/installation)** - Быстрый старт и продвинутая установка
-- **[Руководство по использованию](https://docs.claude-mem.ai/usage/getting-started)** - Как Claude-Mem работает автоматически
-- **[Инструменты поиска](https://docs.claude-mem.ai/usage/search-tools)** - Запросы к истории проекта на естественном языке
+- **[Руководство по установке](https://docs.opencode-mem.ai/installation)** - Быстрый старт и продвинутая установка
+- **[Руководство по использованию](https://docs.opencode-mem.ai/usage/getting-started)** - Как Claude-Mem работает автоматически
+- **[Инструменты поиска](https://docs.opencode-mem.ai/usage/search-tools)** - Запросы к истории проекта на естественном языке
 
 ### Лучшие практики
 
-- **[Инженерия контекста](https://docs.claude-mem.ai/context-engineering)** - Принципы оптимизации контекста для AI-агентов
-- **[Прогрессивное раскрытие](https://docs.claude-mem.ai/progressive-disclosure)** - Философия стратегии подготовки контекста в Claude-Mem
+- **[Инженерия контекста](https://docs.opencode-mem.ai/context-engineering)** - Принципы оптимизации контекста для AI-агентов
+- **[Прогрессивное раскрытие](https://docs.opencode-mem.ai/progressive-disclosure)** - Философия стратегии подготовки контекста в Claude-Mem
 
 ### Архитектура
 
-- **[Обзор](https://docs.claude-mem.ai/architecture/overview)** - Компоненты системы и поток данных
-- **[Эволюция архитектуры](https://docs.claude-mem.ai/architecture-evolution)** - Путь от v3 к v5
-- **[Архитектура хуков](https://docs.claude-mem.ai/hooks-architecture)** - Как Claude-Mem использует хуки жизненного цикла
-- **[Справочник по хукам](https://docs.claude-mem.ai/architecture/hooks)** - Объяснение 7 скриптов хуков
-- **[Сервис Worker](https://docs.claude-mem.ai/architecture/worker-service)** - HTTP API и управление Bun
-- **[База данных](https://docs.claude-mem.ai/architecture/database)** - Схема SQLite и поиск FTS5
-- **[Архитектура поиска](https://docs.claude-mem.ai/architecture/search-architecture)** - Гибридный поиск с векторной базой данных Chroma
+- **[Обзор](https://docs.opencode-mem.ai/architecture/overview)** - Компоненты системы и поток данных
+- **[Эволюция архитектуры](https://docs.opencode-mem.ai/architecture-evolution)** - Путь от v3 к v5
+- **[Архитектура хуков](https://docs.opencode-mem.ai/hooks-architecture)** - Как Claude-Mem использует хуки жизненного цикла
+- **[Справочник по хукам](https://docs.opencode-mem.ai/architecture/hooks)** - Объяснение 7 скриптов хуков
+- **[Сервис Worker](https://docs.opencode-mem.ai/architecture/worker-service)** - HTTP API и управление Bun
+- **[База данных](https://docs.opencode-mem.ai/architecture/database)** - Схема SQLite и поиск FTS5
+- **[Архитектура поиска](https://docs.opencode-mem.ai/architecture/search-architecture)** - Гибридный поиск с векторной базой данных Chroma
 
 ### Конфигурация и разработка
 
-- **[Конфигурация](https://docs.claude-mem.ai/configuration)** - Переменные окружения и настройки
-- **[Разработка](https://docs.claude-mem.ai/development)** - Сборка, тестирование, участие в разработке
-- **[Ветки релизов](https://docs.claude-mem.ai/branches)** - Поток веток stable, core-dev и community-edge
-- **[Устранение неполадок](https://docs.claude-mem.ai/troubleshooting)** - Распространенные проблемы и решения
+- **[Конфигурация](https://docs.opencode-mem.ai/configuration)** - Переменные окружения и настройки
+- **[Разработка](https://docs.opencode-mem.ai/development)** - Сборка, тестирование, участие в разработке
+- **[Ветки релизов](https://docs.opencode-mem.ai/branches)** - Поток веток stable, core-dev и community-edge
+- **[Устранение неполадок](https://docs.opencode-mem.ai/troubleshooting)** - Распространенные проблемы и решения
 
 ---
 
@@ -231,7 +231,7 @@ curl -fsSL https://install.cmem.ai/openclaw.sh | bash
 5. **Навык mem-search** - Запросы на естественном языке с прогрессивным раскрытием
 6. **Векторная база данных Chroma** - Гибридный семантический + ключевой поиск для интеллектуального извлечения контекста
 
-Подробности см. в [Обзоре архитектуры](https://docs.claude-mem.ai/architecture/overview).
+Подробности см. в [Обзоре архитектуры](https://docs.opencode-mem.ai/architecture/overview).
 
 ---
 
@@ -270,7 +270,7 @@ search(query="authentication bug", type="bugfix", limit=10)
 get_observations(ids=[123, 456])
 ```
 
-Подробные примеры см. в [Руководстве по инструментам поиска](https://docs.claude-mem.ai/usage/search-tools).
+Подробные примеры см. в [Руководстве по инструментам поиска](https://docs.opencode-mem.ai/usage/search-tools).
 
 ---
 
@@ -278,7 +278,7 @@ get_observations(ids=[123, 456])
 
 Стабильные релизы выпускаются из `main` и публикуются в npm. `core-dev` и
 `community-edge` — это ветки, запускаемые из исходного кода, для ранних исправлений
-надежности и интеграций сообщества. См. **[Ветки релизов](https://docs.claude-mem.ai/branches)**
+надежности и интеграций сообщества. См. **[Ветки релизов](https://docs.opencode-mem.ai/branches)**
 для описания потока веток и инструкций по запуску нестабильных версий.
 
 ---
@@ -306,13 +306,13 @@ npm : The term 'npm' is not recognized as the name of a cmdlet
 
 ## Конфигурация
 
-Настройки управляются в `~/.claude-mem/settings.json` (автоматически создается с настройками по умолчанию при первом запуске). Настройте AI-модель, порт worker, директорию данных, уровень логирования и параметры внедрения контекста.
+Настройки управляются в `~/.opencode-mem/settings.json` (автоматически создается с настройками по умолчанию при первом запуске). Настройте AI-модель, порт worker, директорию данных, уровень логирования и параметры внедрения контекста.
 
-Все доступные настройки и примеры см. в **[Руководстве по конфигурации](https://docs.claude-mem.ai/configuration)**.
+Все доступные настройки и примеры см. в **[Руководстве по конфигурации](https://docs.opencode-mem.ai/configuration)**.
 
 ### Настройка режима и языка
 
-Claude-Mem поддерживает несколько режимов рабочего процесса и языков через настройку `CLAUDE_MEM_MODE`.
+Claude-Mem поддерживает несколько режимов рабочего процесса и языков через настройку `OPENCODE_MEM_MODE`.
 
 Эта опция управляет одновременно:
 - Поведением рабочего процесса (например, code, chill, investigation)
@@ -320,11 +320,11 @@ Claude-Mem поддерживает несколько режимов рабоч
 
 #### Как настроить
 
-Отредактируйте файл настроек по адресу `~/.claude-mem/settings.json`:
+Отредактируйте файл настроек по адресу `~/.opencode-mem/settings.json`:
 
 ```json
 {
-  "CLAUDE_MEM_MODE": "code--zh"
+  "OPENCODE_MEM_MODE": "code--zh"
 }
 ```
 
@@ -353,7 +353,7 @@ ls ~/.claude/plugins/marketplaces/thedotmack/plugin/modes/
 
 ## Разработка
 
-Инструкции по сборке, тестированию и процессу участия в разработке см. в **[Руководстве по разработке](https://docs.claude-mem.ai/development)**.
+Инструкции по сборке, тестированию и процессу участия в разработке см. в **[Руководстве по разработке](https://docs.opencode-mem.ai/development)**.
 
 ---
 
@@ -361,7 +361,7 @@ ls ~/.claude/plugins/marketplaces/thedotmack/plugin/modes/
 
 При возникновении проблем опишите проблему Claude, и навык устранения неполадок автоматически выполнит диагностику и предоставит исправления.
 
-Распространенные проблемы и решения см. в **[Руководстве по устранению неполадок](https://docs.claude-mem.ai/troubleshooting)**.
+Распространенные проблемы и решения см. в **[Руководстве по устранению неполадок](https://docs.opencode-mem.ai/troubleshooting)**.
 
 ---
 
@@ -386,10 +386,10 @@ npm run bug-report
 
 Claude-Mem выпускается из трёх веток: `main` (стабильная), `core-dev` и
 `community-edge`. Только `main` публикуется в npm; остальные запускаются из
-исходного кода. См. [Ветки релизов](https://docs.claude-mem.ai/branches) для
+исходного кода. См. [Ветки релизов](https://docs.opencode-mem.ai/branches) для
 описания стратегии и инструкций по локальному запуску.
 
-Процесс участия см. в [Руководстве по разработке](https://docs.claude-mem.ai/development).
+Процесс участия см. в [Руководстве по разработке](https://docs.opencode-mem.ai/development).
 
 ---
 
@@ -412,8 +412,8 @@ Claude-Mem распространяется под лицензией Apache Lic
 ## Поддержка
 
 - **Документация**: [docs/](docs/)
-- **Проблемы**: [GitHub Issues](https://github.com/thedotmack/claude-mem/issues)
-- **Репозиторий**: [github.com/thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)
+- **Проблемы**: [GitHub Issues](https://github.com/kykiles/opencode-mem/issues)
+- **Репозиторий**: [github.com/kykiles/opencode-mem](https://github.com/kykiles/opencode-mem)
 - **Официальный аккаунт X**: [@Claude_Memory](https://x.com/Claude_Memory)
 - **Официальный Discord**: [Присоединиться к Discord](https://discord.com/invite/J4wttp9vDu)
 - **Автор**: Alex Newman ([@thedotmack](https://github.com/thedotmack))

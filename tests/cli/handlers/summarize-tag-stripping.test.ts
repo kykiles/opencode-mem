@@ -17,16 +17,16 @@ const realWorkerUtilsSnapshot = { ...realWorkerUtils };
 mock.module('../../../src/shared/SettingsDefaultsManager.js', () => ({
   SettingsDefaultsManager: {
     get: (key: string) => {
-      if (key === 'CLAUDE_MEM_DATA_DIR') return join(homedir(), '.claude-mem');
+      if (key === 'OPENCODE_MEM_DATA_DIR') return join(homedir(), '.opencode-mem');
       return '';
     },
     getInt: () => 0,
-    loadFromFile: () => ({ CLAUDE_MEM_EXCLUDED_PROJECTS: '' }),
+    loadFromFile: () => ({ OPENCODE_MEM_EXCLUDED_PROJECTS: '' }),
   },
 }));
 
 mock.module('../../../src/shared/hook-settings.js', () => ({
-  loadFromFileOnce: () => ({ CLAUDE_MEM_EXCLUDED_PROJECTS: '' }),
+  loadFromFileOnce: () => ({ OPENCODE_MEM_EXCLUDED_PROJECTS: '' }),
 }));
 
 let mockExtractedMessage: string = '';
@@ -191,7 +191,7 @@ describe('summarizeHandler — privacy tag stripping', () => {
 
   const taggedPayloads: Array<[string, string]> = [
     ['<private>', '<private>SECRET-PRIVATE</private>'],
-    ['<claude-mem-context>', '<claude-mem-context>SECRET-CTX</claude-mem-context>'],
+    ['<opencode-mem-context>', '<opencode-mem-context>SECRET-CTX</opencode-mem-context>'],
     ['<system-instruction>', '<system-instruction>SECRET-SI-DASH</system-instruction>'],
     ['<system_instruction>', '<system_instruction>SECRET-SI-UNDER</system_instruction>'],
     ['<persisted-output>', '<persisted-output>SECRET-PO</persisted-output>'],

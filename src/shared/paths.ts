@@ -15,18 +15,18 @@ function getDirname(): string {
 const _dirname = getDirname();
 
 export function resolveDataDir(): string {
-  if (process.env.CLAUDE_MEM_DATA_DIR) {
-    return process.env.CLAUDE_MEM_DATA_DIR;
+  if (process.env.OPENCODE_MEM_DATA_DIR) {
+    return process.env.OPENCODE_MEM_DATA_DIR;
   }
 
-  const defaultDataDir = join(homedir(), '.claude-mem');
+  const defaultDataDir = join(homedir(), '.opencode-mem');
   const settingsPath = join(defaultDataDir, 'settings.json');
   try {
     if (existsSync(settingsPath)) {
       const raw = parseJsonWithBom<Record<string, any>>(readFileSync(settingsPath, 'utf-8'));
       const settings = raw.env ?? raw; 
-      if (settings.CLAUDE_MEM_DATA_DIR) {
-        return settings.CLAUDE_MEM_DATA_DIR;
+      if (settings.OPENCODE_MEM_DATA_DIR) {
+        return settings.OPENCODE_MEM_DATA_DIR;
       }
     }
   } catch {
@@ -43,7 +43,7 @@ export const MARKETPLACE_ROOT = join(CLAUDE_CONFIG_DIR, 'plugins', 'marketplaces
 
 export const LOGS_DIR = join(DATA_DIR, 'logs');
 export const USER_SETTINGS_PATH = join(DATA_DIR, 'settings.json');
-export const DB_PATH = join(DATA_DIR, 'claude-mem.db');
+export const DB_PATH = join(DATA_DIR, 'opencode-mem.db');
 
 export const OBSERVER_SESSIONS_DIR = join(DATA_DIR, 'observer-sessions');
 
@@ -67,7 +67,7 @@ export const paths = {
   serverPort: () => join(DATA_DIR, '.server-beta.port'),
   serverRuntime: () => join(DATA_DIR, '.server-beta.runtime.json'),
   settings: () => join(DATA_DIR, 'settings.json'),
-  database: () => join(DATA_DIR, 'claude-mem.db'),
+  database: () => join(DATA_DIR, 'opencode-mem.db'),
   chroma: () => join(DATA_DIR, 'chroma'),
   combinedCerts: () => join(DATA_DIR, 'combined_certs.pem'),
   transcriptsConfig: () => join(DATA_DIR, 'transcript-watch.json'),

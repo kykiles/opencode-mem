@@ -38,7 +38,7 @@ export interface ShellTemplateOptions {
    * so mcp callers may omit it.
    */
   trailingCommand?: string[];
-  /** Extra env exports prepended to the trailing command (e.g. CLAUDE_MEM_CODEX_HOOK=1). */
+  /** Extra env exports prepended to the trailing command (e.g. OPENCODE_MEM_CODEX_HOOK=1). */
   extraEnv?: Record<string, string>;
   /** Optional trailing JSON echoed after the command (e.g. SessionStart continue marker). */
   trailingJson?: object;
@@ -119,7 +119,7 @@ function candidateBlock(options: ShellTemplateOptions): string {
   }
 
   const extraCacheRoots = isMcp && options.mcpExtraCacheRoots ? options.mcpExtraCacheRoots : [];
-  const allGlobs = [...extraCacheRoots, '$_C/plugins/cache/thedotmack/claude-mem']
+  const allGlobs = [...extraCacheRoots, '$_C/plugins/cache/kykiles/opencode-mem']
     .map((root) => `"${root}"/[0-9]*/`)
     .join(' ');
   lines.push(`ls -dt ${allGlobs} 2>/dev/null;`);
@@ -179,7 +179,7 @@ function buildMcpNodeLauncher(options: ShellTemplateOptions): string {
   const candidates = (options.mcpExtraCandidates ?? []).map(shTokenToNode);
   const cacheRoots = [
     ...(options.mcpExtraCacheRoots ?? []),
-    '$_C/plugins/cache/thedotmack/claude-mem',
+    '$_C/plugins/cache/kykiles/opencode-mem',
   ].map(shTokenToNode);
   const marketplace = shTokenToNode('$_C/plugins/marketplaces/thedotmack/plugin');
   const require = JSON.stringify(options.requireFile);
@@ -236,13 +236,13 @@ export function buildCodexWindowsCommand(
     "const C=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude');",
     "const roots=[];",
     "for(const v of [process.env.CLAUDE_PLUGIN_ROOT,process.env.PLUGIN_ROOT])if(v)roots.push(v);",
-    "const cache=p.join(C,'plugins','cache','thedotmack','claude-mem');",
+    "const cache=p.join(C,'plugins','cache','thedotmack','opencode-mem');",
     "try{roots.push(...fs.readdirSync(cache).filter(n=>{const ch=n.charAt(0);return ch>='0'&&ch<='9'}).map(n=>p.join(cache,n)).filter(r=>{try{return fs.statSync(r).isDirectory()}catch{return false}}).sort((a,b)=>fs.statSync(b).mtimeMs-fs.statSync(a).mtimeMs))}catch{}",
     "roots.push(p.join(C,'plugins','marketplaces','thedotmack','plugin'));",
     "let R=null;",
     "for(const k of roots){const r=fs.existsSync(p.join(k,'plugin','scripts'))?p.join(k,'plugin'):k;if(fs.existsSync(p.join(r,'scripts','bun-runner.js'))&&fs.existsSync(p.join(r,'scripts','worker-service.cjs'))){R=r;break}}",
-    "if(!R){process.stderr.write('claude-mem: plugin scripts not found\\n');process.exit(1)}",
-    "const env={...process.env,CLAUDE_MEM_CODEX_HOOK:'1'};",
+    "if(!R){process.stderr.write('opencode-mem: plugin scripts not found\\n');process.exit(1)}",
+    "const env={...process.env,OPENCODE_MEM_CODEX_HOOK:'1'};",
   ];
 
   if (options.startupVersionCheck) {

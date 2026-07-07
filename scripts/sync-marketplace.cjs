@@ -6,7 +6,7 @@ const path = require('path');
 const os = require('os');
 
 const INSTALLED_PATH = path.join(os.homedir(), '.claude', 'plugins', 'marketplaces', 'thedotmack');
-const CACHE_BASE_PATH = path.join(os.homedir(), '.claude', 'plugins', 'cache', 'thedotmack', 'claude-mem');
+const CACHE_BASE_PATH = path.join(os.homedir(), '.claude', 'plugins', 'cache', 'thedotmack', 'opencode-mem');
 
 function getCurrentBranch() {
   try {
@@ -51,7 +51,7 @@ if (branch && branch !== 'main' && !isForce) {
   console.log('\x1b[33m%s\x1b[0m', 'Running rsync would overwrite beta code.');
   console.log('');
   console.log('Options:');
-  console.log('  1. Use the claude-mem UI on the configured worker port to update beta');
+  console.log('  1. Use the opencode-mem UI on the configured worker port to update beta');
   console.log('  2. Switch to stable in UI first, then run sync');
   console.log('  3. Force rsync: npm run sync-marketplace:force');
   console.log('');

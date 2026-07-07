@@ -68,12 +68,6 @@ import {
 } from '../server/auth/sqlite-api-key-service.js';
 import { ServerV1Routes } from '../server/routes/v1/ServerV1Routes.js';
 
-import {
-  handleCursorCommand
-} from './integrations/CursorHooksInstaller.js';
-import {
-  handleAntigravityCliCommand
-} from './integrations/AntigravityCliHooksInstaller.js';
 
 import { DatabaseManager } from './worker/DatabaseManager.js';
 import { SessionManager } from './worker/SessionManager.js';
@@ -355,7 +349,7 @@ export class WorkerService implements WorkerRef {
     this.server.registerRoutes(new DataRoutes(this.paginationHelper, this.dbManager, this.sessionManager, this.sseBroadcaster, this, this.startTime));
     this.server.registerRoutes(new SettingsRoutes(this.settingsManager));
     this.server.registerRoutes(new LogsRoutes());
-    this.server.registerRoutes(new MemoryRoutes(this.dbManager, 'claude-mem'));
+    this.server.registerRoutes(new MemoryRoutes(this.dbManager, 'opencode-mem'));
     this.server.registerRoutes(new ServerV1Routes({
       getDatabase: () => this.dbManager.getConnection(),
     }));
@@ -448,7 +442,7 @@ export class WorkerService implements WorkerRef {
 
       const settings = SettingsDefaultsManager.loadFromFile(USER_SETTINGS_PATH);
 
-      const modeId = settings.CLAUDE_MEM_MODE;
+      const modeId = settings.OPENCODE_MEM_MODE;
       ModeManager.getInstance().loadMode(modeId);
       logger.info('SYSTEM', `Mode loaded: ${modeId}`);
 
@@ -490,12 +484,12 @@ export class WorkerService implements WorkerRef {
         logger.error('WORKER', 'Worktree adoption failed (background)', {}, err instanceof Error ? err : new Error(String(err)));
       });
 
-      const chromaEnabled = settings.CLAUDE_MEM_CHROMA_ENABLED !== 'false';
+      const chromaEnabled = settings.OPENCODE_MEM_CHROMA_ENABLED !== 'false';
       if (chromaEnabled) {
         this.chromaMcpManager = ChromaMcpManager.getInstance();
         logger.info('SYSTEM', 'ChromaMcpManager initialized (lazy - connects on first use)');
       } else {
-        logger.info('SYSTEM', 'Chroma disabled via CLAUDE_MEM_CHROMA_ENABLED=false, skipping ChromaMcpManager');
+        logger.info('SYSTEM', 'Chroma disabled via OPENCODE_MEM_CHROMA_ENABLED=false, skipping ChromaMcpManager');
       }
 
       logger.info('WORKER', 'Initializing database manager...');
@@ -538,8 +532,8 @@ export class WorkerService implements WorkerRef {
       const buildLifecycleProps = (): Record<string, unknown> => {
         const props: Record<string, unknown> = {
           runtime_mode: 'worker',
-          provider: settings.CLAUDE_MEM_PROVIDER,
-          mode: settings.CLAUDE_MEM_MODE,
+          provider: settings.OPENCODE_MEM_PROVIDER,
+          mode: settings.OPENCODE_MEM_MODE,
         };
         try {
           const row = this.dbManager.getConnection()
@@ -646,13 +640,13 @@ export class WorkerService implements WorkerRef {
   }
 
   private async startTranscriptWatcher(settings: ReturnType<typeof SettingsDefaultsManager.loadFromFile>): Promise<void> {
-    const transcriptsEnabled = settings.CLAUDE_MEM_TRANSCRIPTS_ENABLED !== 'false';
+    const transcriptsEnabled = settings.OPENCODE_MEM_TRANSCRIPTS_ENABLED !== 'false';
     if (!transcriptsEnabled) {
-      logger.info('TRANSCRIPT', 'Transcript watcher disabled via CLAUDE_MEM_TRANSCRIPTS_ENABLED=false');
+      logger.info('TRANSCRIPT', 'Transcript watcher disabled via OPENCODE_MEM_TRANSCRIPTS_ENABLED=false');
       return;
     }
 
-    const configPath = settings.CLAUDE_MEM_TRANSCRIPTS_CONFIG_PATH || DEFAULT_CONFIG_PATH;
+    const configPath = settings.OPENCODE_MEM_TRANSCRIPTS_CONFIG_PATH || DEFAULT_CONFIG_PATH;
     const resolvedConfigPath = expandHomePath(configPath);
 
     if (!existsSync(resolvedConfigPath)) {
@@ -662,7 +656,7 @@ export class WorkerService implements WorkerRef {
       return;
     }
 
-    const allowCodexTranscriptIngestion = settings.CLAUDE_MEM_CODEX_TRANSCRIPT_INGESTION === 'true';
+    const allowCodexTranscriptIngestion = settings.OPENCODE_MEM_CODEX_TRANSCRIPT_INGESTION === 'true';
     const { config: transcriptConfig, removed } = filterNativeHookBackedCodexWatches(
       loadTranscriptWatchConfig(configPath),
       allowCodexTranscriptIngestion
@@ -672,7 +666,7 @@ export class WorkerService implements WorkerRef {
     if (removed > 0) {
       logger.warn('TRANSCRIPT', 'Skipped Codex transcript watch because native Codex hooks are authoritative', {
         removed,
-        optInSetting: 'CLAUDE_MEM_CODEX_TRANSCRIPT_INGESTION=true',
+        optInSetting: 'OPENCODE_MEM_CODEX_TRANSCRIPT_INGESTION=true',
       });
     }
 
@@ -850,7 +844,7 @@ function runServerServiceCli(command: string, extraArgs: string[] = []): void {
       serverScript = legacyScript;
     } else {
       console.error(`Server script not found at: ${serverScript}`);
-      console.error('Rebuild or reinstall claude-mem so server-service.cjs is available.');
+      console.error('Rebuild or reinstall opencode-mem so server-service.cjs is available.');
       process.exit(1);
     }
   }
@@ -859,7 +853,7 @@ function runServerServiceCli(command: string, extraArgs: string[] = []): void {
     stdio: 'inherit',
     // Strip host CLI bleed-through (CLAUDE_CODE_*, including EFFORT_LEVEL) and
     // Anthropic credentials before handing env to the spawned daemon. The
-    // daemon re-reads its own credentials from ~/.claude-mem/.env. See
+    // daemon re-reads its own credentials from ~/.opencode-mem/.env. See
     // env-isolation discipline (#2357 / #2375).
     env: sanitizeEnv(process.env),
   });
@@ -999,7 +993,7 @@ async function main() {
 
   function exitWithStatus(status: 'ready' | 'error', message?: string): never {
     const output = buildStatusOutput(status, message, {
-      includeSuppressOutput: process.env.CLAUDE_MEM_CODEX_HOOK !== '1',
+      includeSuppressOutput: process.env.OPENCODE_MEM_CODEX_HOOK !== '1',
     });
     console.log(JSON.stringify(output));
     process.exit(0);
@@ -1225,16 +1219,14 @@ async function main() {
     }
 
     case 'cursor': {
-      const subcommand = process.argv[3];
-      const cursorResult = await handleCursorCommand(subcommand, process.argv.slice(4));
-      process.exit(cursorResult);
+      console.error('Cursor integration is no longer available.');
+      process.exit(0);
       break;
     }
 
     case 'antigravity-cli': {
-      const antigravitySubcommand = process.argv[3];
-      const antigravityResult = await handleAntigravityCliCommand(antigravitySubcommand, process.argv.slice(4));
-      process.exit(antigravityResult);
+      console.error('Antigravity CLI integration is no longer available.');
+      process.exit(0);
       break;
     }
 
@@ -1247,7 +1239,7 @@ async function main() {
       const platform = process.argv[3];
       const event = process.argv[4];
       if (!platform || !event) {
-        console.error('Usage: claude-mem hook <platform> <event>');
+        console.error('Usage: opencode-mem hook <platform> <event>');
         console.error('Platforms: claude-code, codex, cursor, antigravity-cli, raw');
         console.error('Events: context, session-init, observation, summarize, user-message');
         process.exit(1);
@@ -1282,7 +1274,7 @@ async function main() {
     case 'transcript': {
       // npx-cli falls back to `worker-service.cjs transcript <sub>` when the
       // standalone `transcript-watcher.cjs` is not present in the bundle
-      // (see thedotmack/claude-mem 2450). Dispatch to the shared
+      // (see kykiles/opencode-mem 2450). Dispatch to the shared
       // implementation so `init`, `watch`, and `validate` all work
       // regardless of which entry point the user invokes.
       const { runTranscriptCommand } = await import('./transcripts/cli.js');
@@ -1442,7 +1434,7 @@ export function formatDependencyHealthHint(health: WorkerHealthSnapshot): string
     return `${status.dependency}: ${status.kind}`;
   });
 
-  return `  Dependencies: degraded (${labels.join(', ')}). Run npx claude-mem doctor or open Settings for remediation.`;
+  return `  Dependencies: degraded (${labels.join(', ')}). Run npx opencode-mem doctor or open Settings for remediation.`;
 }
 
 /**
@@ -1471,7 +1463,7 @@ async function fetchWorkerHealth(port: number, timeoutMs: number): Promise<Worke
  * hand keeps the output consistent with what `status` just reported.
  */
 function printQueueStatusIfBullMq(health: WorkerHealthSnapshot): void {
-  if (SettingsDefaultsManager.get('CLAUDE_MEM_QUEUE_ENGINE').trim().toLowerCase() !== 'bullmq') {
+  if (SettingsDefaultsManager.get('OPENCODE_MEM_QUEUE_ENGINE').trim().toLowerCase() !== 'bullmq') {
     return;
   }
   const redis = health.queue?.redis;
@@ -1480,11 +1472,11 @@ function printQueueStatusIfBullMq(health: WorkerHealthSnapshot): void {
   }
   const target = `${redis.host ?? 'unknown'}:${redis.port ?? 'unknown'}`;
   const suffix = redis.status === 'ok' ? '' : ` (${redis.error ?? 'unhealthy'})`;
-  console.log(`  Queue: BullMQ Redis ${redis.status ?? 'unknown'} at ${target} [${redis.mode ?? 'external'}, prefix=${redis.prefix ?? 'claude_mem'}]${suffix}`);
+  console.log(`  Queue: BullMQ Redis ${redis.status ?? 'unknown'} at ${target} [${redis.mode ?? 'external'}, prefix=${redis.prefix ?? 'opencode_mem'}]${suffix}`);
 }
 
 const isMainModule = typeof require !== 'undefined' && typeof module !== 'undefined'
-  ? require.main === module || !module.parent || process.env.CLAUDE_MEM_MANAGED === 'true'
+  ? require.main === module || !module.parent || process.env.OPENCODE_MEM_MANAGED === 'true'
   : import.meta.url === `file://${process.argv[1]}`
     || process.argv[1]?.endsWith('worker-service')
     || process.argv[1]?.endsWith('worker-service.cjs')

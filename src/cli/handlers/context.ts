@@ -59,7 +59,7 @@ export const contextHandler: EventHandler = {
     const port = getWorkerPort();
 
     const settings = loadFromFileOnce();
-    const showTerminalOutput = settings.CLAUDE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT === 'true';
+    const showTerminalOutput = settings.OPENCODE_MEM_CONTEXT_SHOW_TERMINAL_OUTPUT === 'true';
 
     const projectsParam = context.allProjects.join(',');
     const normalizedPlatformSource = input.platform
@@ -107,7 +107,7 @@ export const contextHandler: EventHandler = {
     // a previous worker spawn detected an expired keychain entry.
     const staleReason = readStaleMarker();
     if (staleReason) {
-      const hint = `[claude-mem] Claude Desktop OAuth token is stale: ${staleReason}\nPlease re-login via Claude Desktop to refresh the token.`;
+      const hint = `[opencode-mem] Claude Desktop OAuth token is stale: ${staleReason}\nPlease re-login via Claude Desktop to refresh the token.`;
       additionalContext = additionalContext
         ? `${hint}\n\n${additionalContext}`
         : hint;

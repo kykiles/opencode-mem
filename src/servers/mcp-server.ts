@@ -135,7 +135,7 @@ async function verifyWorkerConnection(): Promise<boolean> {
 // event-insert + outbox + enqueue logic on the MCP side.
 //
 // We deliberately resolve the runtime per-call (cheap; reads cached
-// settings) so the user can flip CLAUDE_MEM_RUNTIME without restarting
+// settings) so the user can flip OPENCODE_MEM_RUNTIME without restarting
 // the MCP server.
 type ServerToolContext = ServerRuntimeContext;
 
@@ -204,7 +204,7 @@ function requireServerForObservationTool(toolName: string): ServerAvailable {
   if (!resolution) {
     throw new ServerClientError(
       'transport',
-      `${toolName} requires CLAUDE_MEM_RUNTIME=server. Current runtime is "worker"; use the existing search/timeline/get_observations tools for worker-mode memory access.`,
+      `${toolName} requires OPENCODE_MEM_RUNTIME=server. Current runtime is "worker"; use the existing search/timeline/get_observations tools for worker-mode memory access.`,
     );
   }
   if (!resolution.available) {
@@ -535,7 +535,7 @@ NEVER fetch full details without filtering first. 10x token savings.`,
     inputSchema: {
       type: 'object',
       properties: {
-        project: { type: 'string', description: 'Project name, e.g. claude-mem/night-parsnip' },
+        project: { type: 'string', description: 'Project name, e.g. opencode-mem/night-parsnip' },
         projects: {
           oneOf: [
             { type: 'array', items: { type: 'string' } },
@@ -558,7 +558,7 @@ NEVER fetch full details without filtering first. 10x token savings.`,
     inputSchema: {
       type: 'object',
       properties: {
-        projectId: { type: 'string', description: 'Project id (falls back to CLAUDE_MEM_SERVER_PROJECT_ID)' },
+        projectId: { type: 'string', description: 'Project id (falls back to OPENCODE_MEM_SERVER_PROJECT_ID)' },
         serverSessionId: { type: 'string', description: 'Optional server_session_id to attach the observation to' },
         kind: { type: 'string', description: 'Observation kind (default: manual)' },
         content: { type: 'string', description: 'Observation content (required)' },
@@ -856,7 +856,7 @@ NEVER fetch full details without filtering first. 10x token savings.`,
 
 const server = new Server(
   {
-    name: 'claude-mem',
+    name: 'opencode-mem',
     version: packageVersion,
   },
   {
@@ -962,8 +962,8 @@ function detectMissingMarketplaceMarker(): void {
   ];
   const present = marketplaceCandidates.some(p => p && existsSync(p));
   const cacheCandidates = [
-    resolve(home, '.claude', 'plugins', 'cache', 'thedotmack', 'claude-mem'),
-    resolve(home, '.config', 'claude', 'plugins', 'cache', 'thedotmack', 'claude-mem'),
+    resolve(home, '.claude', 'plugins', 'cache', 'thedotmack', 'opencode-mem'),
+    resolve(home, '.config', 'claude', 'plugins', 'cache', 'thedotmack', 'opencode-mem'),
   ];
   const cachePresent = cacheCandidates.some(p => p && existsSync(p));
   const cacheRoot = cacheCandidates[0];
@@ -971,7 +971,7 @@ function detectMissingMarketplaceMarker(): void {
   if (!present && cachePresent) {
     logger.error(
       'SYSTEM',
-      'claude-mem MCP started but no marketplace directory was found at ~/.claude/plugins/marketplaces/thedotmack or the XDG equivalent. The IDE plugin loader needs that directory to fire claude-mem hooks (SessionStart, PostToolUse, Stop, etc.). Without it, MCP search will work but no new memories will be captured. To self-heal, run: node ~/.claude/plugins/cache/thedotmack/claude-mem/*/scripts/smart-install.js (or reinstall the plugin from the marketplace).',
+      'opencode-mem MCP started but no marketplace directory was found at ~/.claude/plugins/marketplaces/thedotmack or the XDG equivalent. The IDE plugin loader needs that directory to fire opencode-mem hooks (SessionStart, PostToolUse, Stop, etc.). Without it, MCP search will work but no new memories will be captured. To self-heal, run: node ~/.claude/plugins/cache/kykiles/opencode-mem/*/scripts/smart-install.js (or reinstall the plugin from the marketplace).',
       { marketplaceCandidates, cacheRoot }
     );
   }
@@ -996,7 +996,7 @@ async function main() {
   startParentHeartbeat();
 
   setTimeout(async () => {
-    // Phase 8 — when CLAUDE_MEM_RUNTIME=server (or legacy `server-beta`,
+    // Phase 8 — when OPENCODE_MEM_RUNTIME=server (or legacy `server-beta`,
     // normalized to `'server'` by selectRuntime), MCP must NOT auto-start
     // the worker. observation_* tools talk to the server runtime directly;
     // the legacy worker-backed tools (search/timeline/get_observations)

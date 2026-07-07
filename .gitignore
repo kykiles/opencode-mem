@@ -37,11 +37,11 @@ src/ui/viewer.html
 
 plugin/.cli-installed
 
-plugin/scripts/claude-mem
+plugin/scripts/opencode-mem
 
 CONTRIB_NOTES.md
 
-.docker-claude-mem-data/
+.docker-opencode-mem-data/
 
 .docker-blowout-data/
 .scratch/
