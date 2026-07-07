@@ -107,16 +107,6 @@ function shellTemplateManifest(buildShellCommand, buildCodexWindowsCommand) {
         'Stop.0.0': claudeHook(['hook', 'claude-code', 'summarize']),
       },
     },
-    'plugin/hooks/codex-hooks.json': {
-      kind: 'hooks',
-      commands: {
-        'SessionStart.0.0': codexHookPair(['hook', 'codex', 'context'], { startupVersionCheck: true }),
-        'UserPromptSubmit.0.0': codexHookPair(['hook', 'codex', 'session-init']),
-        'PreToolUse.0.0': codexHookPair(['hook', 'codex', 'file-context']),
-        'PostToolUse.0.0': codexHookPair(['hook', 'codex', 'observation']),
-        'Stop.0.0': codexHookPair(['hook', 'codex', 'summarize']),
-      },
-    },
     'plugin/.mcp.json': {
       kind: 'mcp',
       command: buildShellCommand({
@@ -602,31 +592,6 @@ async function buildHooks() {
     const npxCliStats = fs.statSync(`${npxCliOutDir}/index.js`);
     console.log(`✓ npx-cli built (${(npxCliStats.size / 1024).toFixed(2)} KB)`);
 
-    if (fs.existsSync('openclaw/src/index.ts')) {
-      console.log(`\n🔧 Building OpenClaw plugin...`);
-      const openclawOutDir = 'openclaw/dist';
-      if (!fs.existsSync(openclawOutDir)) {
-        fs.mkdirSync(openclawOutDir, { recursive: true });
-      }
-      await build({
-        entryPoints: ['openclaw/src/index.ts'],
-        bundle: true,
-        platform: 'node',
-        target: 'node18',
-        format: 'esm',
-        outfile: `${openclawOutDir}/index.js`,
-        minify: true,
-        logLevel: 'error',
-        external: [
-          'fs', 'fs/promises', 'path', 'os', 'child_process', 'url',
-          'crypto', 'http', 'https', 'net', 'stream', 'util', 'events',
-        ],
-      });
-
-      const openclawStats = fs.statSync(`${openclawOutDir}/index.js`);
-      console.log(`✓ openclaw plugin built (${(openclawStats.size / 1024).toFixed(2)} KB)`);
-    }
-
     if (fs.existsSync('src/integrations/opencode-plugin/index.ts')) {
       console.log(`\n🔧 Building OpenCode plugin...`);
       const opencodeOutDir = 'dist/opencode-plugin';
@@ -663,60 +628,24 @@ async function buildHooks() {
     console.log(`✓ Copied ${onboardingExplainerSrc} → ${onboardingExplainerDst}`);
 
     console.log('\n📋 Verifying distribution files...');
-    const validCodexHookEvents = new Set([
-      'SessionStart',
-      'UserPromptSubmit',
-      'PreToolUse',
-      'PermissionRequest',
-      'PostToolUse',
-      'Stop',
-    ]);
     const requiredDistributionFiles = [
       'plugin/skills/mem-search/SKILL.md',
       'plugin/skills/smart-explore/SKILL.md',
       'plugin/skills/how-it-works/SKILL.md',
       'plugin/skills/how-it-works/onboarding-explainer.md',
       'plugin/hooks/hooks.json',
-      'plugin/hooks/codex-hooks.json',
       'plugin/scripts/bun-runner.js',
       'plugin/sqlite/SessionStore.js',
       'plugin/sqlite/observations/files.js',
-      'plugin/.claude-plugin/plugin.json',
-      'plugin/.codex-plugin/plugin.json',
       'plugin/.mcp.json',
-      '.codex-plugin/plugin.json',
-      '.agents/plugins/marketplace.json',
     ];
     for (const filePath of requiredDistributionFiles) {
       if (!fs.existsSync(filePath)) {
         throw new Error(`Missing required distribution file: ${filePath}`);
       }
     }
-    const codexHooks = JSON.parse(fs.readFileSync('plugin/hooks/codex-hooks.json', 'utf-8'));
-    const validCodexHookRootKeys = new Set(['hooks']);
-    for (const rootKey of Object.keys(codexHooks)) {
-      if (!validCodexHookRootKeys.has(rootKey)) {
-        throw new Error(`plugin/hooks/codex-hooks.json contains unsupported Codex root key: ${rootKey}`);
-      }
-    }
-    for (const eventName of Object.keys(codexHooks.hooks ?? {})) {
-      if (!validCodexHookEvents.has(eventName)) {
-        throw new Error(`plugin/hooks/codex-hooks.json contains unknown Codex hook event: ${eventName}`);
-      }
-    }
-    const codexMarketplace = JSON.parse(fs.readFileSync('.agents/plugins/marketplace.json', 'utf-8'));
-    const opencodeMemMarketplaceEntry = (codexMarketplace.plugins ?? []).find((plugin) => plugin.name === 'opencode-mem');
-    if (opencodeMemMarketplaceEntry?.source?.path !== './plugin') {
-      throw new Error('.agents/plugins/marketplace.json must point opencode-mem source.path at ./plugin so Codex loads the bundled plugin root');
-    }
+
     const bundledMcp = JSON.parse(fs.readFileSync('plugin/.mcp.json', 'utf-8'));
-    const mcpSearchCommand = bundledMcp.mcpServers?.['mcp-search']?.args?.join(' ') ?? '';
-    if (!mcpSearchCommand.includes('.codex/plugins/cache/opencode-mem-local/opencode-mem')) {
-      throw new Error('plugin/.mcp.json mcp-search launcher must include Codex cache fallback for hosts that do not inject PLUGIN_ROOT');
-    }
-    if (!mcpSearchCommand.includes('plugins/cache/kykiles/opencode-mem')) {
-      throw new Error('plugin/.mcp.json mcp-search launcher must include Claude cache fallback for hosts that do not inject PLUGIN_ROOT');
-    }
     console.log('✓ All required distribution files present');
 
     await verifyShellTemplateCanonical();
@@ -730,10 +659,6 @@ async function buildHooks() {
     console.log(`   - Transcript Watcher: transcript-watcher.cjs`);
     console.log(`   Output: ${npxCliOutDir}/`);
     console.log(`   - NPX CLI: index.js`);
-    if (fs.existsSync('openclaw/dist/index.js')) {
-      console.log(`   Output: openclaw/dist/`);
-      console.log(`   - OpenClaw Plugin: index.js`);
-    }
     if (fs.existsSync('dist/opencode-plugin/index.js')) {
       console.log(`   Output: dist/opencode-plugin/`);
       console.log(`   - OpenCode Plugin: index.js`);

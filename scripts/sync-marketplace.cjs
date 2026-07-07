@@ -60,9 +60,9 @@ if (branch && branch !== 'main' && !isForce) {
 
 function getPluginVersion() {
   try {
-    const pluginJsonPath = path.join(__dirname, '..', 'plugin', '.claude-plugin', 'plugin.json');
-    const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
-    return pluginJson.version;
+    const packageJsonPath = path.join(__dirname, '..', 'package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    return packageJson.version;
   } catch (error) {
     console.error('\x1b[31m%s\x1b[0m', 'Failed to read plugin version:', error.message);
     process.exit(1);

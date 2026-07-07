@@ -1,5 +1,5 @@
 {
-  "name": "opencode-mem",
+  "name": "@kykiles/opencode-mem",
   "version": "13.10.2",
   "description": "Persistent memory compression system for OpenCode - capture, compress, and inject context across sessions",
   "keywords": [
