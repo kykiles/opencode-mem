@@ -54,16 +54,6 @@ export function npmPackagePluginDirectory(): string {
 }
 
 export function readPluginVersion(): string {
-  const pluginJsonPath = join(npmPackagePluginDirectory(), '.claude-plugin', 'plugin.json');
-  if (existsSync(pluginJsonPath)) {
-    try {
-      const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf-8'));
-      if (pluginJson.version) return pluginJson.version;
-    } catch {
-      // Fall through to package.json
-    }
-  }
-
   const packageJsonPath = join(npmPackageRootDirectory(), 'package.json');
   if (existsSync(packageJsonPath)) {
     try {
@@ -79,7 +69,7 @@ export function readPluginVersion(): string {
 
 export function isPluginInstalled(): boolean {
   const marketplaceDir = marketplaceDirectory();
-  return existsSync(join(marketplaceDir, 'plugin', '.claude-plugin', 'plugin.json'));
+  return existsSync(join(marketplaceDir, 'package.json'));
 }
 
 export { readJsonSafe } from '../../utils/json-utils.js';
