@@ -113,13 +113,11 @@ export function deregisterOpenCodePluginFromConfig(): number {
 }
 
 export function findBuiltPluginPath(): string | null {
+  const currentFilePath = fileURLToPath(import.meta.url);
+  const packageRoot = path.join(path.dirname(currentFilePath), '..', '..');
+
   const possiblePaths = [
-    // Look for pre-built plugin in the opencode-mem data directory
-    path.join(
-      process.env.OPENCODE_MEM_DATA_DIR || path.join(homedir(), '.opencode-mem'),
-      'dist', 'opencode-plugin', 'index.js',
-    ),
-    path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'dist', 'opencode-plugin', 'index.js'),
+    path.join(packageRoot, 'dist', 'opencode-plugin', 'index.js'),
   ];
 
   for (const candidatePath of possiblePaths) {
