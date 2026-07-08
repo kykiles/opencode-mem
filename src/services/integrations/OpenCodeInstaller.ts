@@ -194,6 +194,34 @@ async function fetchRealContextFromWorker(): Promise<string | null> {
   return realContext && realContext.trim() ? realContext : null;
 }
 
+/**
+ * Install-honesty round-trip (plan-08 step 4): post a probe observation to the
+ * worker and require an OK. If the worker is unreachable or the capture path is
+ * broken, install must NOT report success — a future contract break surfaces at
+ * install time instead of silently losing all opencode session data.
+ */
+async function verifyCaptureRoundTrip(): Promise<boolean> {
+  const workerUrl = `http://${getWorkerHost()}:${getWorkerPort()}`;
+  try {
+    const health = await fetch(`${workerUrl}/api/readiness`);
+    if (!health.ok) return false;
+    const testObs = await fetch(`${workerUrl}/api/sessions/observations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contentSessionId: `opencode-install-verify-${Date.now()}`,
+        tool_name: 'install_verify',
+        tool_input: {},
+        tool_response: 'install honesty probe',
+        cwd: process.cwd(),
+      }),
+    });
+    return testObs.ok;
+  } catch {
+    return false;
+  }
+}
+
 function writeOrRemoveCleanedAgentsMd(agentsMdPath: string, trimmedContent: string): void {
   if (
     trimmedContent.length === 0 ||
@@ -330,6 +358,19 @@ Use opencode-mem search tools for manual memory queries.`;
       console.log('  Placeholder context created (worker not running)');
     }
   }
+
+  // Install honesty (plan-08 step 4): verify the capture path is live before
+  // claiming success. If the worker is down or the observation POST fails,
+  // return non-zero so the user knows to start the worker.
+  const captureOk = await verifyCaptureRoundTrip();
+  if (!captureOk) {
+    console.error(
+      '\nCapture path is not live: worker unreachable or observation POST failed.\n' +
+      'Start the worker and re-run install:  npx opencode-mem start && npx opencode-mem install --ide opencode',
+    );
+    return 1;
+  }
+  console.log('  Capture round-trip: OK');
 
   console.log(`
 Installation complete!

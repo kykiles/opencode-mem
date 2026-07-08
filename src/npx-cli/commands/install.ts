@@ -301,6 +301,20 @@ function makeIDETask(ideId: string, summary: InstallSummary): TaskDescriptor | n
         title: 'OpenCode: installing plugin',
         task: async (message) => {
           message('Loading OpenCode installer…');
+          // Start the worker before install so the honesty round-trip can pass.
+          // (plan-08 step 4 — install must verify capture is live.)
+          try {
+            const port = Number(getSetting('OPENCODE_MEM_WORKER_PORT'));
+            const localScript = join(process.cwd(), 'plugin', 'scripts', 'worker-service.cjs');
+            const scriptPath = existsSync(localScript) ? localScript : join(marketplaceDirectory(), 'plugin', 'scripts', 'worker-service.cjs');
+            if (existsSync(scriptPath)) {
+              message('Starting worker for capture verification…');
+              await ensureWorkerStarted(port, scriptPath);
+            }
+          } catch (error) {
+            // Non-fatal: the honesty round-trip inside install will report the
+            // real failure if the worker can't come up.
+          }
           const { installOpenCodeIntegration } = await import('../../services/integrations/OpenCodeInstaller.js');
           message('Installing OpenCode plugin…');
           const { result, output } = await bufferConsole(() => installOpenCodeIntegration());
