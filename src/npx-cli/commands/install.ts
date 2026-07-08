@@ -9,6 +9,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { SettingsDefaultsManager, type SettingsDefaults } from '../../shared/SettingsDefaultsManager.js';
+import { buildProviderPreset } from './provider-presets.js';
 import { USER_SETTINGS_PATH } from '../../shared/paths.js';
 import { writeJsonFileAtomic as writeSettingsJsonAtomic } from '../../shared/atomic-json.js';
 import { loadClaudeMemEnv, saveClaudeMemEnv } from '../../shared/EnvManager.js';
@@ -651,7 +652,7 @@ function mergeSettings(updates: Record<string, string>): boolean {
   }
 }
 
-type ProviderId = 'claude' | 'gemini' | 'openrouter';
+type ProviderId = 'qwen' | 'deepseek' | 'openrouter' | 'gemini' | 'claude';
 type ClaudeAccessMode = 'subscription' | 'api-key';
 type ClaudeApiMode = 'direct' | 'gateway';
 // Phase 1d: Persisted DB literals (`server_beta_schema_migrations`, job_type
@@ -796,7 +797,7 @@ async function bootstrapAndPersistServerApiKey(): Promise<void> {
 }
 
 async function promptProvider(options: InstallOptions): Promise<ProviderId> {
-  const initialProvider = (getSetting('OPENCODE_MEM_PROVIDER') as ProviderId) || 'claude';
+  const initialProvider = (getSetting('OPENCODE_MEM_PROVIDER') as ProviderId) || 'qwen';
 
   const persistClaudeProvider = (authMethod?: 'subscription' | 'api-key' | 'gateway') => {
     const resolvedAuthMethod = authMethod ?? resolveClaudeAuthMethod();
@@ -916,9 +917,16 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
         persistClaudeProvider();
         return 'claude';
       }
-      const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: options.provider });
+      const preset = buildProviderPreset(options.provider);
+      const wrote = mergeSettings({
+        OPENCODE_MEM_PROVIDER: preset.OPENCODE_MEM_PROVIDER,
+        ...(preset.OPENCODE_MEM_OPENROUTER_BASE_URL ? {
+          OPENCODE_MEM_OPENROUTER_BASE_URL: preset.OPENCODE_MEM_OPENROUTER_BASE_URL,
+          OPENCODE_MEM_OPENROUTER_MODEL: preset.OPENCODE_MEM_OPENROUTER_MODEL,
+        } : {}),
+      });
       if (wrote) log.info(`Saved provider=${options.provider} to ~/.opencode-mem/settings.json`);
-      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set OPENCODE_MEM_${options.provider.toUpperCase()}_API_KEY and OPENCODE_MEM_PROVIDER in settings.json or env manually if not already set.`);
+      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set ${preset.keyEnv} in settings.json or env manually if not already set.`);
       return options.provider;
     }
     return initialProvider;
@@ -975,9 +983,11 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
     const providerResult = await p.select<ProviderId>({
       message: 'Which memory provider do you want to use?',
       options: [
-        { value: 'claude', label: 'Claude Agent SDK (recommended)' },
+        { value: 'qwen', label: 'Qwen qwen-plus (DashScope) — recommended (free, works in RU without VPN)' },
+        { value: 'deepseek', label: 'DeepSeek deepseek-chat' },
+        { value: 'openrouter', label: 'OpenRouter (any model, bring your own key)' },
         { value: 'gemini', label: 'Gemini' },
-        { value: 'openrouter', label: 'OpenRouter' },
+        { value: 'claude', label: 'Claude Agent SDK (uses your Anthropic subscription/key)' },
       ],
       initialValue: initialProvider,
     });
@@ -993,14 +1003,19 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
     return 'claude';
   }
 
-  const providerLabel = selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter';
-  const keyEnvName = selectedProvider === 'gemini'
-    ? 'OPENCODE_MEM_GEMINI_API_KEY'
-    : 'OPENCODE_MEM_OPENROUTER_API_KEY';
+  const preset = buildProviderPreset(selectedProvider);
+  const providerLabel = preset.label;
+  const keyEnvName = preset.keyEnv;
 
   const existingKey = getSetting(keyEnvName as keyof SettingsDefaults) as string | undefined;
   if (existingKey && existingKey.trim().length > 0) {
-    const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: selectedProvider });
+    const wrote = mergeSettings({
+      OPENCODE_MEM_PROVIDER: preset.OPENCODE_MEM_PROVIDER,
+      ...(preset.OPENCODE_MEM_OPENROUTER_BASE_URL ? {
+        OPENCODE_MEM_OPENROUTER_BASE_URL: preset.OPENCODE_MEM_OPENROUTER_BASE_URL,
+        OPENCODE_MEM_OPENROUTER_MODEL: preset.OPENCODE_MEM_OPENROUTER_MODEL,
+      } : {}),
+    });
     if (wrote) log.info(`Saved provider=${selectedProvider} to ~/.opencode-mem/settings.json`);
     return selectedProvider;
   }
@@ -1019,7 +1034,11 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
 
   const apiKey = String(apiKeyResult).trim();
   const wrote = mergeSettings({
-    OPENCODE_MEM_PROVIDER: selectedProvider,
+    OPENCODE_MEM_PROVIDER: preset.OPENCODE_MEM_PROVIDER,
+    ...(preset.OPENCODE_MEM_OPENROUTER_BASE_URL ? {
+      OPENCODE_MEM_OPENROUTER_BASE_URL: preset.OPENCODE_MEM_OPENROUTER_BASE_URL,
+      OPENCODE_MEM_OPENROUTER_MODEL: preset.OPENCODE_MEM_OPENROUTER_MODEL,
+    } : {}),
     [keyEnvName]: apiKey,
   });
   if (wrote) {
@@ -1278,7 +1297,7 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
 
 export interface InstallOptions {
   ide?: string;
-  provider?: 'claude' | 'gemini' | 'openrouter';
+  provider?: 'qwen' | 'deepseek' | 'openrouter' | 'gemini' | 'claude';
   model?: string;
   noAutoStart?: boolean;
   disableAutoMemory?: boolean;
