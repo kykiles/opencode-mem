@@ -1,429 +1,80 @@
-<h1 align="center">
-  <br>
-  <a href="https://github.com/thedotmack/claude-mem">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/opencode-mem-logo-for-dark-mode.webp">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/opencode-mem-logo-for-light-mode.webp" alt="opencode-mem" width="400">
-    </picture>
-  </a>
-  <br>
-  <a href="https://vercel.com/open-source-program">
-    <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge-2026.svg" />
-  </a>
-</h1>
+# opencode-mem
 
-<p align="center">
-  <a href="docs/i18n/README.zh.md">🇨🇳 中文</a> •
-  <a href="docs/i18n/README.zh-tw.md">🇹🇼 繁體中文</a> •
-  <a href="docs/i18n/README.ja.md">🇯🇵 日本語</a> •
-  <a href="docs/i18n/README.pt.md">🇵🇹 Português</a> •
-  <a href="docs/i18n/README.pt-br.md">🇧🇷 Português</a> •
-  <a href="docs/i18n/README.ko.md">🇰🇷 한국어</a> •
-  <a href="docs/i18n/README.es.md">🇪🇸 Español</a> •
-  <a href="docs/i18n/README.de.md">🇩🇪 Deutsch</a> •
-  <a href="docs/i18n/README.fr.md">🇫🇷 Français</a> •
-  <a href="docs/i18n/README.he.md">🇮🇱 עברית</a> •
-  <a href="docs/i18n/README.ar.md">🇸🇦 العربية</a> •
-  <a href="docs/i18n/README.ru.md">🇷🇺 Русский</a> •
-  <a href="docs/i18n/README.pl.md">🇵🇱 Polski</a> •
-  <a href="docs/i18n/README.cs.md">🇨🇿 Čeština</a> •
-  <a href="docs/i18n/README.nl.md">🇳🇱 Nederlands</a> •
-  <a href="docs/i18n/README.tr.md">🇹🇷 Türkçe</a> •
-  <a href="docs/i18n/README.uk.md">🇺🇦 Українська</a> •
-  <a href="docs/i18n/README.vi.md">🇻🇳 Tiếng Việt</a> •
-  <a href="docs/i18n/README.tl.md">🇵🇭 Tagalog</a> •
-  <a href="docs/i18n/README.id.md">🇮🇩 Indonesia</a> •
-  <a href="docs/i18n/README.th.md">🇹🇭 ไทย</a> •
-  <a href="docs/i18n/README.hi.md">🇮🇳 हिन्दी</a> •
-  <a href="docs/i18n/README.bn.md">🇧🇩 বাংলা</a> •
-  <a href="docs/i18n/README.ur.md">🇵🇰 اردو</a> •
-  <a href="docs/i18n/README.ro.md">🇷🇴 Română</a> •
-  <a href="docs/i18n/README.sv.md">🇸🇪 Svenska</a> •
-  <a href="docs/i18n/README.it.md">🇮🇹 Italiano</a> •
-  <a href="docs/i18n/README.el.md">🇬🇷 Ελληνικά</a> •
-  <a href="docs/i18n/README.hu.md">🇭🇺 Magyar</a> •
-  <a href="docs/i18n/README.fi.md">🇫🇮 Suomi</a> •
-  <a href="docs/i18n/README.da.md">🇩🇰 Dansk</a> •
-  <a href="docs/i18n/README.no.md">🇳🇴 Norsk</a>
-</p>
+Persistent memory compression system for [OpenCode](https://opencode.ai). Captures tool usage observations, compresses them into semantic summaries, and injects relevant context into future OpenCode sessions.
 
-<h4 align="center">Persistent memory compression system built for <a href="https://claude.com/claude-code" target="_blank">Claude Code</a>.</h4>
-
-<p align="center">
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
-  </a>
-  <a href="package.json">
-    <img src="https://img.shields.io/badge/version-13.4.0-green.svg" alt="Version">
-  </a>
-  <a href="package.json">
-    <img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg" alt="Node">
-  </a>
-  <a href="https://github.com/thedotmack/awesome-claude-code">
-    <img src="https://awesome.re/mentioned-badge.svg" alt="Mentioned in Awesome Claude Code">
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://trendshift.io/repositories/15496" target="_blank">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg">
-      <img src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/trendshift-badge.svg" alt="thedotmack/claude-mem | Trendshift" width="250" height="55"/>
-    </picture>
-  </a>
-</p>
-
-<br>
-
-<table align="center">
-  <tr>
-    <td align="center">
-      <a href="https://github.com/thedotmack/claude-mem">
-        <picture>
-          <img
-            src="https://raw.githubusercontent.com/thedotmack/claude-mem/main/docs/public/cm-preview.gif"
-            alt="opencode-mem Preview"
-            width="500"
-          >
-        </picture>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://www.star-history.com/#thedotmack/claude-mem&Date">
-        <picture>
-          <source
-            media="(prefers-color-scheme: dark)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&theme=dark&legend=top-left"
-          />
-          <source
-            media="(prefers-color-scheme: light)"
-            srcset="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
-          />
-          <img
-            alt="Star History Chart"
-            src="https://api.star-history.com/image?repos=thedotmack/claude-mem&type=date&legend=top-left"
-            width="500"
-          />
-        </picture>
-      </a>
-    </td>
-  </tr>
-</table>
-
-<p align="center">
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#how-it-works">How It Works</a> •
-  <a href="#mcp-search-tools">Search Tools</a> •
-  <a href="#documentation">Documentation</a> •
-  <a href="#configuration">Configuration</a> •
-  <a href="#troubleshooting">Troubleshooting</a> •
-  <a href="#license">License</a>
-</p>
-
-<p align="center">
-  opencode-mem seamlessly preserves context across sessions by automatically capturing tool usage observations, generating semantic summaries, and making them available to future sessions. This enables Claude to maintain continuity of knowledge about projects even after sessions end or reconnect.
-</p>
-
----
+> Forked from [claude-mem](https://github.com/thedotmack/claude-mem) by Alex Newman (@thedotmack). Apache-2.0.
 
 ## Quick Start
-
-Install with a single command:
-
-```bash
-npx opencode-mem install
-```
-
-Or install for OpenCode:
 
 ```bash
 npx opencode-mem install --ide opencode
 ```
 
-Or install for Antigravity CLI ([setup guide](https://docs.opencode-mem.ai/antigravity-cli/setup)):
-
-```bash
-npx opencode-mem install --ide antigravity
-```
-
-Or install from the plugin marketplace inside Claude Code:
-
-```bash
-/plugin marketplace add thedotmack/claude-mem
-
-/plugin install opencode-mem
-```
-
-Restart Claude Code. Context from previous sessions will automatically appear in new sessions.
-
-> **Note:** opencode-mem is also published on npm, but `npm install -g opencode-mem` installs the **SDK/library only** — it does not register the plugin hooks or set up the worker service. Always install via `npx opencode-mem install` or the `/plugin` commands above.
-
-### 🦞 OpenClaw Gateway
-
-Install opencode-mem as a persistent memory plugin on [OpenClaw](https://openclaw.ai) gateways with a single command:
-
-```bash
-curl -fsSL https://install.cmem.ai/openclaw.sh | bash
-```
-
-The installer handles dependencies, plugin setup, AI provider configuration, worker startup, and optional real-time observation feeds to Telegram, Discord, Slack, and more. See the [OpenClaw Integration Guide](https://docs.opencode-mem.ai/openclaw-integration) for details.
-
-**Key Features:**
-
-- 🧠 **Persistent Memory** - Context survives across sessions
-- 📊 **Progressive Disclosure** - Layered memory retrieval with token cost visibility
-- 🔍 **Skill-Based Search** - Query your project history with mem-search skill
-- 🖥️ **Web Viewer UI** - Real-time memory stream at the worker URL printed on startup
-- 💻 **Claude Desktop Skill** - Search memory from Claude Desktop conversations
-- 🔒 **Privacy Control** - Use `<private>` tags to exclude sensitive content from storage
-- ⚙️ **Context Configuration** - Fine-grained control over what context gets injected
-- 🤖 **Automatic Operation** - No manual intervention required
-- 🔗 **Citations** - Reference past observations with IDs through the worker API or view all in the web viewer
-
----
-
-## Documentation
-
-📚 **[View Full Documentation](https://docs.opencode-mem.ai/)** - Browse on official website
-
-### Getting Started
-
-- **[Installation Guide](https://docs.opencode-mem.ai/installation)** - Quick start & advanced installation
-- **[Usage Guide](https://docs.opencode-mem.ai/usage/getting-started)** - How opencode-mem works automatically
-- **[Search Tools](https://docs.opencode-mem.ai/usage/search-tools)** - Query your project history with natural language
-
-### Best Practices
-
-- **[Context Engineering](https://docs.opencode-mem.ai/context-engineering)** - AI agent context optimization principles
-- **[Progressive Disclosure](https://docs.opencode-mem.ai/progressive-disclosure)** - Philosophy behind opencode-mem's context priming strategy
-
-### Architecture
-
-- **[Overview](https://docs.opencode-mem.ai/architecture/overview)** - System components & data flow
-- **[Architecture Evolution](https://docs.opencode-mem.ai/architecture-evolution)** - The journey from v3 to v5
-- **[Hooks Architecture](https://docs.opencode-mem.ai/hooks-architecture)** - How opencode-mem uses lifecycle hooks
-- **[Hooks Reference](https://docs.opencode-mem.ai/architecture/hooks)** - 7 hook scripts explained
-- **[Worker Service](https://docs.opencode-mem.ai/architecture/worker-service)** - HTTP API & Bun management
-- **[Database](https://docs.opencode-mem.ai/architecture/database)** - SQLite schema & FTS5 search
-- **[Search Architecture](https://docs.opencode-mem.ai/architecture/search-architecture)** - Hybrid search with Chroma vector database
-
-### Configuration & Development
-
-- **[Configuration](https://docs.opencode-mem.ai/configuration)** - Environment variables & settings
-- **[Development](https://docs.opencode-mem.ai/development)** - Building, testing, contributing
-- **[Release Branches](https://docs.opencode-mem.ai/branches)** - Stable, core-dev, and community-edge branch flow
-- **[Troubleshooting](https://docs.opencode-mem.ai/troubleshooting)** - Common issues & solutions
-
----
+Restart OpenCode. Context from previous sessions will automatically appear in new sessions.
 
 ## How It Works
 
-**Core Components:**
+1. **OpenCode plugin** — registers hooks (`tool.execute.after`, `chat.message`, `experimental.session.compacting`, `event`) that capture tool usage as observations.
+2. **Worker service** — local HTTP API (default port 37700) that stores observations in SQLite + FTS5, generates semantic summaries via an AI provider, and serves context injection + search.
+3. **mem-search tool** — `opencode_mem_search` plugin tool for natural-language queries over past observations.
+4. **Context injection** — on session start, relevant past context is injected into `~/.config/opencode/AGENTS.md` inside `<opencode-mem-context>` tags.
 
-1. **5 Lifecycle Hooks** - SessionStart, UserPromptSubmit, PostToolUse, Stop, SessionEnd (6 hook scripts)
-2. **Smart Install** - Cached dependency checker (pre-hook script, not a lifecycle hook)
-3. **Worker Service** - Local HTTP API with web viewer UI and search endpoints, managed by Bun
-4. **SQLite Database** - Stores sessions, observations, summaries
-5. **mem-search Skill** - Natural language queries with progressive disclosure
-6. **Chroma Vector Database** - Hybrid semantic + keyword search for intelligent context retrieval
+## AI Provider
 
-See [Architecture Overview](https://docs.opencode-mem.ai/architecture/overview) for details.
+Default: **Qwen `qwen-plus` via DashScope (Alibaba)** — free tier, works in Russia without VPN, OpenAI-compatible API.
 
----
+Alternatives selectable during install: DeepSeek (`deepseek-chat`), OpenRouter (any model), Gemini, Claude Agent SDK.
 
-## MCP Search Tools
-
-opencode-mem provides intelligent memory search through **4 MCP tools** following a token-efficient **3-layer workflow pattern**:
-
-**The 3-Layer Workflow:**
-
-1. **`search`** - Get compact index with IDs (~50-100 tokens/result)
-2. **`timeline`** - Get chronological context around interesting results
-3. **`get_observations`** - Fetch full details ONLY for filtered IDs (~500-1,000 tokens/result)
-
-**How It Works:**
-- Claude uses MCP tools to search your memory
-- Start with `search` to get an index of results
-- Use `timeline` to see what was happening around specific observations
-- Use `get_observations` to fetch full details for relevant IDs
-- **~10x token savings** by filtering before fetching details
-
-**Available MCP Tools:**
-
-1. **`search`** - Search memory index with full-text queries, filters by type/date/project
-2. **`timeline`** - Get chronological context around a specific observation or query
-3. **`get_observations`** - Fetch full observation details by IDs (always batch multiple IDs)
-
-**Example Usage:**
-
-```typescript
-// Step 1: Search for index
-search(query="authentication bug", type="bugfix", limit=10)
-
-// Step 2: Review index, identify relevant IDs (e.g., #123, #456)
-
-// Step 3: Fetch full details
-get_observations(ids=[123, 456])
-```
-
-See [Search Tools Guide](https://docs.opencode-mem.ai/usage/search-tools) for detailed examples.
-
----
-
-## Release Branches
-
-Stable releases ship from `main` and are published to npm. `core-dev` and
-`community-edge` are source-run branches for early reliability fixes and
-community integrations. See **[Release Branches](https://docs.opencode-mem.ai/branches)**
-for the branch flow and non-stable run instructions.
-
----
-
-## System Requirements
-
-- **Node.js**: 20.0.0 or higher
-- **Claude Code**: Latest version with plugin support
-- **Bun**: JavaScript runtime and process manager (auto-installed if missing)
-- **uv**: Python package manager for vector search (auto-installed if missing)
-- **SQLite 3**: For persistent storage (bundled)
-
----
-### Windows Setup Notes
-
-If you see an error like:
-
-```powershell
-npm : The term 'npm' is not recognized as the name of a cmdlet
-```
-
-Make sure Node.js and npm are installed and added to your PATH. Download the latest Node.js installer from https://nodejs.org and restart your terminal after installation.
-
----
-
-## Configuration
-
-Settings are managed in `~/.opencode-mem/settings.json` (auto-created with defaults on first run). Configure AI model, worker port, data directory, log level, and context injection settings.
-
-See the **[Configuration Guide](https://docs.opencode-mem.ai/configuration)** for all available settings and examples.
-
-### Mode & Language Configuration
-
-opencode-mem supports multiple workflow modes and languages via the `CLAUDE_MEM_MODE` setting.
-
-This option controls both:
-- The workflow behavior (e.g. code, chill, investigation)
-- The language used in generated observations
-
-#### How to Configure
-
-Edit your settings file at `~/.opencode-mem/settings.json`:
+Configure your DashScope API key during install, or set it manually in `~/.opencode-mem/settings.json`:
 
 ```json
 {
-  "CLAUDE_MEM_MODE": "code--zh"
+  "OPENCODE_MEM_PROVIDER": "openrouter",
+  "OPENCODE_MEM_OPENROUTER_BASE_URL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "OPENCODE_MEM_OPENROUTER_MODEL": "qwen-plus",
+  "OPENCODE_MEM_OPENROUTER_API_KEY": "<your-dashscope-key>"
 }
 ```
 
-Modes are defined in `plugin/modes/`. To see all available modes locally:
+## File Locations
 
-```bash
-ls ~/.claude/plugins/marketplaces/thedotmack/plugin/modes/
-```
-
-#### Available Modes
-
-| Mode | Description |
-|------------|-------------------------|
-| `code` | Default English mode |
-| `code--zh` | Simplified Chinese mode |
-| `code--ja` | Japanese mode |
-
-Language-specific modes follow the pattern `code--[lang]` where `[lang]` is the ISO 639-1 language code (e.g., `zh` for Chinese, `ja` for Japanese, `es` for Spanish).
-
-> Note: `code--zh` (Simplified Chinese) is already built-in — no additional installation or plugin update is required.
-
-#### After Changing Mode
-
-Restart Claude Code to apply the new mode configuration.
----
+- **Data directory**: `~/.opencode-mem/`
+- **Database**: `~/.opencode-mem/opencode-mem.db` (SQLite + FTS5)
+- **Chroma vectors**: `~/.opencode-mem/chroma/`
+- **Settings**: `~/.opencode-mem/settings.json`
+- **Plugin (installed)**: `~/.config/opencode/plugins/opencode-mem.js`
+- **Context file**: `~/.config/opencode/AGENTS.md`
 
 ## Development
 
-See the **[Development Guide](https://docs.opencode-mem.ai/development)** for build instructions, testing, and contribution workflow.
+```bash
+npm install          # install deps (bun preferred)
+npm run build        # build worker + npx-cli + opencode plugin -> dist/
+npm run sync:opencode  # copy dist/opencode-plugin/index.js to ~/.config/opencode/plugins/
+npm run build-and-sync  # build + sync
+npm test             # bun test
+npx tsc --noEmit     # typecheck
+```
 
----
+### Requirements
+
+- **Bun** (runtime + test) — auto-installed if missing
+- **uv** (Python for Chroma vector search) — auto-installed if missing
+- **Node.js** ≥ 20.12
+
+## Configuration
+
+Settings in `~/.opencode-mem/settings.json` (auto-created with defaults on first run). All env vars use the `OPENCODE_MEM_*` prefix.
 
 ## Troubleshooting
 
-If experiencing issues, describe the problem to Claude and the troubleshoot skill will automatically diagnose and provide fixes.
+If memory is not being captured:
 
-See the **[Troubleshooting Guide](https://docs.opencode-mem.ai/troubleshooting)** for common issues and solutions.
-
----
-
-## Bug Reports
-
-Create comprehensive bug reports with the automated generator:
-
-```bash
-cd ~/.claude/plugins/marketplaces/thedotmack
-npm run bug-report
-```
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Update documentation
-5. Submit a Pull Request
-
-opencode-mem ships from three branches: `main` (stable), `core-dev`, and
-`community-edge`. Only `main` is published to npm; the others are run from
-source. See [Release Branches](https://docs.opencode-mem.ai/branches) for the
-strategy and local run instructions.
-
-See [Development Guide](https://docs.opencode-mem.ai/development) for contribution workflow.
-
----
+1. Verify the worker is running: `curl http://127.0.0.1:37700/api/readiness` → `{"status":"ready"}`
+2. If not, start it: `npx opencode-mem start`
+3. Restart OpenCode (the plugin loads at startup).
+4. Re-run install (it now self-verifies the capture path): `npx opencode-mem install --ide opencode`
 
 ## License
 
-opencode-mem is licensed under the Apache License 2.0.
-
-We chose Apache-2.0 because durable agentic memory should be easy to embed in
-developer tools, local agents, MCP servers, enterprise systems, robotics stacks,
-and production agent harnesses.
-
-See the [LICENSE](LICENSE) file for full details. See [docs/license.md](docs/license.md)
-and [docs/ip-boundary.md](docs/ip-boundary.md) for licensing scope and the
-open/commercial boundary.
-
-**Note on Ragtime**: The `ragtime/` directory is licensed under the **Apache License 2.0**. See [ragtime/LICENSE](ragtime/LICENSE) for details.
-
----
-
-## Support
-
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/thedotmack/claude-mem/issues)
-- **Repository**: [github.com/thedotmack/claude-mem](https://github.com/thedotmack/claude-mem)
-- **Official X Account**: [@Claude_Memory](https://x.com/Claude_Memory)
-- **Official Discord**: [Join Discord](https://discord.com/invite/J4wttp9vDu)
-- **Author**: Alex Newman ([@thedotmack](https://github.com/thedotmack))
-
----
-
-**Built with Claude Agent SDK** | **Works with Claude Code** | **Made with TypeScript**
-
----
-
-### What About CMEM?
-
-CMEM is a token created by a 3rd party but officially embraced by the creator of opencode-mem (Alex Newman, @thedotmack). The token acts as a community catalyst for growth and a vehicle for bringing CMEM to the developers and knowledge workers that need it most.
-
-Official BASE CA: 0x76b1967eec0ccaeb001bbbb2b40dc4badba31ba3
+Apache-2.0. Forked from claude-mem (https://github.com/thedotmack/claude-mem).
