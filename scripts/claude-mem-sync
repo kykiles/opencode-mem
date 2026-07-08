@@ -1,28 +1,28 @@
 #!/bin/bash
-# claude-mem-sync — Synchronize claude-mem observations between machines
+# opencode-mem-sync — Synchronize opencode-mem observations between machines
 #
 # Usage:
-#   claude-mem-sync push <remote-host>    # local → remote
-#   claude-mem-sync pull <remote-host>    # remote → local
-#   claude-mem-sync sync <remote-host>    # bidirectional (push + pull)
-#   claude-mem-sync status <remote-host>  # compare counts
+#   opencode-mem-sync push <remote-host>    # local → remote
+#   opencode-mem-sync pull <remote-host>    # remote → local
+#   opencode-mem-sync sync <remote-host>    # bidirectional (push + pull)
+#   opencode-mem-sync status <remote-host>  # compare counts
 #
 # Prerequisites:
 #   - SSH access to remote host (key-based auth recommended)
 #   - Python 3 on both machines
-#   - claude-mem installed on both machines (~/.claude-mem/claude-mem.db)
+#   - opencode-mem installed on both machines (~/.opencode-mem/opencode-mem.db)
 #
 # Environment variables:
-#   CLAUDE_MEM_DB         Local database path (default: ~/.claude-mem/claude-mem.db)
-#   CLAUDE_MEM_REMOTE_DB  Remote database path (default: ~/.claude-mem/claude-mem.db)
+#   OPENCODE_MEM_DB         Local database path (default: ~/.opencode-mem/opencode-mem.db)
+#   OPENCODE_MEM_REMOTE_DB  Remote database path (default: ~/.opencode-mem/opencode-mem.db)
 
 set -euo pipefail
 
-LOCAL_DB="${CLAUDE_MEM_DB:-$HOME/.claude-mem/claude-mem.db}"
-COMMAND="${1:?Usage: claude-mem-sync <push|pull|sync|status> <remote-host>}"
-REMOTE_HOST="${2:?Missing remote host. Usage: claude-mem-sync $COMMAND <remote-host>}"
-REMOTE_DB="${CLAUDE_MEM_REMOTE_DB:-\$HOME/.claude-mem/claude-mem.db}"
-TMPDIR="/tmp/claude-mem-sync-$$"
+LOCAL_DB="${OPENCODE_MEM_DB:-$HOME/.opencode-mem/opencode-mem.db}"
+COMMAND="${1:?Usage: opencode-mem-sync <push|pull|sync|status> <remote-host>}"
+REMOTE_HOST="${2:?Missing remote host. Usage: opencode-mem-sync $COMMAND <remote-host>}"
+REMOTE_DB="${OPENCODE_MEM_REMOTE_DB:-\$HOME/.opencode-mem/opencode-mem.db}"
+TMPDIR="/tmp/opencode-mem-sync-$$"
 
 mkdir -p "$TMPDIR"
 trap "rm -rf $TMPDIR" EXIT
@@ -175,7 +175,7 @@ conn.close()
 \""
         ;;
     *)
-        echo "Usage: claude-mem-sync <push|pull|sync|status> <remote-host>"
+        echo "Usage: opencode-mem-sync <push|pull|sync|status> <remote-host>"
         exit 1
         ;;
 esac

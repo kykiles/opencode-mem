@@ -7,10 +7,10 @@ import { SettingsDefaultsManager } from '../../shared/SettingsDefaultsManager.js
 import { MARKETPLACE_ROOT, USER_SETTINGS_PATH } from '../../shared/paths.js';
 
 function getWorkerHost(): string {
-  return SettingsDefaultsManager.loadFromFile(USER_SETTINGS_PATH).CLAUDE_MEM_WORKER_HOST;
+  return SettingsDefaultsManager.loadFromFile(USER_SETTINGS_PATH).OPENCODE_MEM_WORKER_HOST;
 }
 
-// Bracket IPv6 literals so a `CLAUDE_MEM_WORKER_HOST` of `::1` yields a valid
+// Bracket IPv6 literals so a `OPENCODE_MEM_WORKER_HOST` of `::1` yields a valid
 // `http://[::1]:port` URL instead of the malformed `http://::1:port`.
 function formatHostForUrl(host: string): string {
   if (host.startsWith('[') && host.endsWith(']')) return host;

@@ -80,19 +80,19 @@ export function unregisterWindsurfProject(workspacePath: string): void {
 
 export function writeWindsurfContextFile(workspacePath: string, context: string): void {
   const rulesDir = path.join(workspacePath, '.windsurf', 'rules');
-  const rulesFile = path.join(rulesDir, 'claude-mem-context.md');
+  const rulesFile = path.join(rulesDir, 'opencode-mem-context.md');
   const tempFile = `${rulesFile}.tmp`;
 
   mkdirSync(rulesDir, { recursive: true });
 
   let content = `# Memory Context from Past Sessions
 
-The following context is from claude-mem, a persistent memory system that tracks your coding sessions.
+The following context is from opencode-mem, a persistent memory system that tracks your coding sessions.
 
 ${context}
 
 ---
-*Auto-updated by claude-mem after each session. Use MCP search tools for detailed queries.*
+*Auto-updated by opencode-mem after each session. Use MCP search tools for detailed queries.*
 `;
 
   if (content.length > WINDSURF_CONTEXT_CHAR_LIMIT) {
@@ -162,7 +162,7 @@ function mergeAndWriteHooksJson(
 }
 
 export async function installWindsurfHooks(): Promise<number> {
-  console.log('\nInstalling Claude-Mem Windsurf hooks (user level)...\n');
+  console.log('\nInstalling opencode-mem Windsurf hooks (user level)...\n');
 
   const workerServicePath = findWorkerServicePath();
   if (!workerServicePath) {
@@ -220,9 +220,9 @@ Events registered:
   - post_cascade_response (full AI response)
 
 Next steps:
-  1. Start claude-mem worker: claude-mem start
+  1. Start opencode-mem worker: opencode-mem start
   2. Restart Windsurf to load the hooks
-  3. Context is injected via .windsurf/rules/claude-mem-context.md (workspace-level)
+  3. Context is injected via .windsurf/rules/opencode-mem-context.md (workspace-level)
 `);
 }
 
@@ -246,12 +246,12 @@ async function setupWindsurfProjectContext(workspaceRoot: string): Promise<void>
   if (!contextGenerated) {
     const rulesDir = path.join(workspaceRoot, '.windsurf', 'rules');
     mkdirSync(rulesDir, { recursive: true });
-    const rulesFile = path.join(rulesDir, 'claude-mem-context.md');
+    const rulesFile = path.join(rulesDir, 'opencode-mem-context.md');
     const placeholderContent = `# Memory Context from Past Sessions
 
 *No context yet. Complete your first session and context will appear here.*
 
-Use claude-mem's MCP search tools for manual memory queries.
+Use opencode-mem's MCP search tools for manual memory queries.
 `;
     writeFileSync(rulesFile, placeholderContent);
     console.log(`  Created placeholder context file (will populate after first session)`);
@@ -285,7 +285,7 @@ async function fetchWindsurfContextFromWorker(
 }
 
 export function uninstallWindsurfHooks(): number {
-  console.log('\nUninstalling Claude-Mem Windsurf hooks...\n');
+  console.log('\nUninstalling opencode-mem Windsurf hooks...\n');
 
   if (existsSync(WINDSURF_HOOKS_JSON_PATH)) {
     try {
@@ -335,12 +335,12 @@ function removeClaudeMemHookEntries(): void {
     console.log(`  Removed hooks.json (no hooks remaining)`);
   } else {
     writeFileSync(WINDSURF_HOOKS_JSON_PATH, JSON.stringify(config, null, 2));
-    console.log(`  Removed claude-mem entries from hooks.json (other hooks preserved)`);
+    console.log(`  Removed opencode-mem entries from hooks.json (other hooks preserved)`);
   }
 }
 
 function removeWindsurfContextAndUnregister(workspaceRoot: string): void {
-  const contextFile = path.join(workspaceRoot, '.windsurf', 'rules', 'claude-mem-context.md');
+  const contextFile = path.join(workspaceRoot, '.windsurf', 'rules', 'opencode-mem-context.md');
   if (existsSync(contextFile)) {
     unlinkSync(contextFile);
     console.log(`  Removed context file`);
@@ -354,7 +354,7 @@ function removeWindsurfContextAndUnregister(workspaceRoot: string): void {
 }
 
 export function checkWindsurfHooksStatus(): number {
-  console.log('\nClaude-Mem Windsurf Hooks Status\n');
+  console.log('\nopencode-mem Windsurf Hooks Status\n');
 
   if (existsSync(WINDSURF_HOOKS_JSON_PATH)) {
     console.log(`User-level: Installed`);
@@ -381,7 +381,7 @@ export function checkWindsurfHooksStatus(): number {
       }
     }
 
-    const contextFile = path.join(process.cwd(), '.windsurf', 'rules', 'claude-mem-context.md');
+    const contextFile = path.join(process.cwd(), '.windsurf', 'rules', 'opencode-mem-context.md');
     if (existsSync(contextFile)) {
       console.log(`   Context: Active (current workspace)`);
     } else {
@@ -389,7 +389,7 @@ export function checkWindsurfHooksStatus(): number {
     }
   } else {
     console.log(`User-level: Not installed`);
-    console.log(`\nNo hooks installed. Run: claude-mem windsurf install\n`);
+    console.log(`\nNo hooks installed. Run: opencode-mem windsurf install\n`);
   }
 
   console.log('');

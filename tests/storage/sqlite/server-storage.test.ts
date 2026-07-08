@@ -50,7 +50,7 @@ describe('server-owned sqlite storage boundary', () => {
 
       const project = projects.create({
         name: 'Claude Mem',
-        rootPath: '/tmp/claude-mem',
+        rootPath: '/tmp/opencode-mem',
         metadata: { source: 'test' }
       });
       const session = sessions.create({

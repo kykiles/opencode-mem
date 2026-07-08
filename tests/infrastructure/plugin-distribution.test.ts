@@ -102,7 +102,7 @@ describe('Plugin Distribution - Codex Marketplace', () => {
 
   it('sets the Codex hook marker on every Codex command', () => {
     for (const command of commandHooksFrom('plugin/hooks/codex-hooks.json')) {
-      expect(command).toContain('CLAUDE_MEM_CODEX_HOOK=1');
+      expect(command).toContain('OPENCODE_MEM_CODEX_HOOK=1');
     }
   });
 
@@ -114,7 +114,7 @@ describe('Plugin Distribution - Codex Marketplace', () => {
     for (const entry of entries) {
       expect(typeof entry.commandWindows).toBe('string');
       expect(entry.commandWindows).toContain('node -e');
-      expect(entry.commandWindows).toContain('CLAUDE_MEM_CODEX_HOOK');
+      expect(entry.commandWindows).toContain('OPENCODE_MEM_CODEX_HOOK');
       expect(entry.commandWindows).toContain('bun-runner.js');
       expect(entry.commandWindows).toContain('worker-service.cjs');
       expect(entry.commandWindows).toContain('plugins');
@@ -137,9 +137,9 @@ describe('Plugin Distribution - Codex Marketplace', () => {
     const mcp = JSON.parse(readFileSync(mcpPath, 'utf-8'));
     const command = mcp.mcpServers['mcp-search'].args.join(' ');
 
-    expect(command).toContain('.codex/plugins/cache/claude-mem-local/claude-mem');
+    expect(command).toContain('.codex/plugins/cache/opencode-mem-local/opencode-mem');
     expect(command).toContain('plugins/cache/thedotmack/claude-mem');
-    expect(command).toContain('claude-mem: mcp server not found');
+    expect(command).toContain('opencode-mem: mcp server not found');
   });
 });
 
@@ -304,22 +304,22 @@ const ccTrailing = (...tail: string[]) => [
 ];
 const claudeHook = (tail: string[], extra: Record<string, unknown> = {}) => buildShellCommand({
   host: 'claude-code', requireFile: 'bun-runner.js', requireFileSecondary: 'worker-service.cjs',
-  trailingCommand: ccTrailing(...tail), notFoundMessage: 'claude-mem: plugin scripts not found', ...extra,
+  trailingCommand: ccTrailing(...tail), notFoundMessage: 'opencode-mem: plugin scripts not found', ...extra,
 });
 const codexHook = (tail: string[]) => buildShellCommand({
   host: 'codex-cli', requireFile: 'bun-runner.js', requireFileSecondary: 'worker-service.cjs',
-  trailingCommand: ccTrailing(...tail), notFoundMessage: 'claude-mem: plugin scripts not found',
-  extraEnv: { CLAUDE_MEM_CODEX_HOOK: '1' },
+  trailingCommand: ccTrailing(...tail), notFoundMessage: 'opencode-mem: plugin scripts not found',
+  extraEnv: { OPENCODE_MEM_CODEX_HOOK: '1' },
 });
 const codexStartupHook = () => buildShellCommand({
   host: 'codex-cli', requireFile: 'bun-runner.js', requireFileSecondary: 'worker-service.cjs',
   trailingCommand: [
-    '_V=$(CLAUDE_MEM_CODEX_HOOK=1 node "$_P/scripts/version-check.js" || true);',
+    '_V=$(OPENCODE_MEM_CODEX_HOOK=1 node "$_P/scripts/version-check.js" || true);',
     'if [ -n "$_V" ]; then printf \'%s\\n\' "$_V"; else',
-    'CLAUDE_MEM_CODEX_HOOK=1', ...ccTrailing('hook', 'codex', 'context'),
+    'OPENCODE_MEM_CODEX_HOOK=1', ...ccTrailing('hook', 'codex', 'context'),
     '; fi',
   ],
-  notFoundMessage: 'claude-mem: plugin scripts not found',
+  notFoundMessage: 'opencode-mem: plugin scripts not found',
 });
 const codexHookPair = (tail: string[], options: { startupVersionCheck?: boolean } = {}) => ({
   command: options.startupVersionCheck ? codexStartupHook() : codexHook(tail),
@@ -333,7 +333,7 @@ const RULE_A_EXPECTATIONS: Record<string, Record<string, RuleAExpectation>> = {
     'Setup.0.0': buildShellCommand({
       host: 'claude-code-setup', requireFile: 'version-check.js',
       trailingCommand: ['node', '"$_P/scripts/version-check.js"'],
-      notFoundMessage: 'claude-mem: version-check.js not found',
+      notFoundMessage: 'opencode-mem: version-check.js not found',
     }),
     'SessionStart.0.0': claudeHook(['start'], { trailingJson: { continue: true, suppressOutput: true } }),
     'SessionStart.0.1': claudeHook(['hook', 'claude-code', 'context']),
@@ -355,10 +355,10 @@ const MCP_EXPECTED = buildShellCommand({
   // The mcp Node launcher derives its spawn target from requireFile; it ignores
   // trailingCommand, so none is passed (see buildMcpNodeLauncher).
   host: 'mcp', requireFile: 'mcp-server.cjs',
-  notFoundMessage: 'claude-mem: mcp server not found',
+  notFoundMessage: 'opencode-mem: mcp server not found',
   mcpExtraCandidates: ['$PWD/plugin', '$PWD'],
   mcpExtraCacheRoots: [
-    '$HOME/.codex/plugins/cache/claude-mem-local/claude-mem',
+    '$HOME/.codex/plugins/cache/opencode-mem-local/opencode-mem',
     '$HOME/.codex/plugins/cache/thedotmack/claude-mem',
   ],
 });
@@ -463,7 +463,7 @@ describe('Spawn-Contract Templating - Rule A shell resolution matrix', () => {
 
   it('resolves _P from the cache directory when CLAUDE_PLUGIN_ROOT is unset', () => {
     const home = mkdtempSync(path.join(tmpdir(), 'cm-home-'));
-    const cacheRoot = path.join(home, '.claude', 'plugins', 'cache', 'thedotmack', 'claude-mem', '99.0.0');
+    const cacheRoot = path.join(home, '.claude', 'plugins', 'cache', 'thedotmack', 'opencode-mem', '99.0.0');
     mkdirSync(path.join(cacheRoot, 'scripts'), { recursive: true });
     writeFileSync(path.join(cacheRoot, 'scripts', 'version-check.js'), '');
     writeFileSync(path.join(cacheRoot, 'scripts', 'bun-runner.js'), '');
@@ -489,7 +489,7 @@ describe('Spawn-Contract Templating - Rule A shell resolution matrix', () => {
         encoding: 'utf-8',
       });
       expect(result.status).not.toBe(0);
-      expect(result.stderr ?? '').toMatch(/claude-mem: .* not found/);
+      expect(result.stderr ?? '').toMatch(/opencode-mem: .* not found/);
     } finally {
       rmSync(home, { recursive: true, force: true });
     }

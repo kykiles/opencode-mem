@@ -55,9 +55,9 @@ const ANTIGRAVITY_MCP_CONFIG_PATHS = [
 // instead, which a live install test (Phase C) proved wrong: it writes into
 // whatever directory the installer happens to run from rather than the
 // user's actual global rules directory.
-const RULES_CONTEXT_PATH = path.join(homedir(), '.agents', 'rules', 'claude-mem-context.md');
+const RULES_CONTEXT_PATH = path.join(homedir(), '.agents', 'rules', 'opencode-mem-context.md');
 
-const HOOK_NAME = 'claude-mem';
+const HOOK_NAME = 'opencode-mem';
 const HOOK_TIMEOUT_MS = 10000;
 
 // 7 confirmed-live hook events (B0). SessionEnd is deliberately excluded:
@@ -163,8 +163,8 @@ function mergeHooksIntoSettings(
 }
 
 function setupGeminiMdContextSection(): void {
-  const contextTag = '<claude-mem-context>';
-  const contextEndTag = '</claude-mem-context>';
+  const contextTag = '<opencode-mem-context>';
+  const contextEndTag = '</opencode-mem-context>';
   const placeholder = `${contextTag}
 # Memory Context from Past Sessions
 
@@ -221,7 +221,7 @@ function setupRulesContextFile(): void {
 }
 
 export async function installAntigravityCliHooks(): Promise<number> {
-  console.log('\nInstalling Claude-Mem Antigravity CLI hooks + MCP...\n');
+  console.log('\nInstalling opencode-mem Antigravity CLI hooks + MCP...\n');
 
   const workerServicePath = findWorkerServicePath();
   if (!workerServicePath) {
@@ -257,7 +257,7 @@ MCP config installed to:
 Using unified CLI: bun worker-service.cjs hook antigravity-cli <event>
 
 Next steps:
-  1. Start claude-mem worker: claude-mem start
+  1. Start opencode-mem worker: opencode-mem start
   2. Restart Antigravity CLI (agy) to load the hooks
   3. Memory will be captured automatically during sessions
 
@@ -303,11 +303,11 @@ function removeClaudeMemFromMcpConfig(mcpConfigPath: string): boolean {
   if (!existsSync(mcpConfigPath)) return false;
 
   const config = readMcpConfigTolerantly(mcpConfigPath);
-  if (!config.mcpServers || !('claude-mem' in config.mcpServers)) {
+  if (!config.mcpServers || !('opencode-mem' in config.mcpServers)) {
     return false;
   }
 
-  delete config.mcpServers['claude-mem'];
+  delete config.mcpServers['opencode-mem'];
   writeFileSync(mcpConfigPath, JSON.stringify(config, null, 2) + '\n');
   return true;
 }
@@ -316,7 +316,7 @@ function removeContextTagBlock(filePath: string): boolean {
   if (!existsSync(filePath)) return false;
 
   let content = readFileSync(filePath, 'utf-8');
-  const contextRegex = /\n?<claude-mem-context>[\s\S]*?<\/claude-mem-context>\n?/;
+  const contextRegex = /\n?<opencode-mem-context>[\s\S]*?<\/opencode-mem-context>\n?/;
   if (!contextRegex.test(content)) return false;
 
   content = content.replace(contextRegex, '');
@@ -325,7 +325,7 @@ function removeContextTagBlock(filePath: string): boolean {
 }
 
 export function uninstallAntigravityCliHooks(): number {
-  console.log('\nUninstalling Claude-Mem Antigravity CLI hooks + MCP...\n');
+  console.log('\nUninstalling opencode-mem Antigravity CLI hooks + MCP...\n');
 
   try {
     if (existsSync(GEMINI_SETTINGS_PATH)) {
@@ -337,7 +337,7 @@ export function uninstallAntigravityCliHooks(): number {
     for (const mcpConfigPath of ANTIGRAVITY_MCP_CONFIG_PATHS) {
       const removed = removeClaudeMemFromMcpConfig(mcpConfigPath);
       if (removed) {
-        console.log(`  Removed claude-mem entry from ${mcpConfigPath}`);
+        console.log(`  Removed opencode-mem entry from ${mcpConfigPath}`);
       }
     }
 
@@ -385,7 +385,7 @@ function removeAntigravityHooksFromSettings(): void {
   }
 
   writeAntigravitySettings(settings);
-  console.log(`  Removed ${removedCount} claude-mem hook(s) from ${GEMINI_SETTINGS_PATH}`);
+  console.log(`  Removed ${removedCount} opencode-mem hook(s) from ${GEMINI_SETTINGS_PATH}`);
 
   if (removeContextTagBlock(GEMINI_MD_PATH)) {
     console.log(`  Removed context section from ${GEMINI_MD_PATH}`);
@@ -393,12 +393,12 @@ function removeAntigravityHooksFromSettings(): void {
 }
 
 export function checkAntigravityCliHooksStatus(): number {
-  console.log('\nClaude-Mem Antigravity CLI Status\n');
+  console.log('\nopencode-mem Antigravity CLI Status\n');
 
   if (!existsSync(GEMINI_SETTINGS_PATH)) {
     console.log('Antigravity CLI settings: Not found');
     console.log(`  Expected at: ${GEMINI_SETTINGS_PATH}\n`);
-    console.log('No hooks installed. Run: claude-mem install --ide antigravity\n');
+    console.log('No hooks installed. Run: opencode-mem install --ide antigravity\n');
     return 0;
   }
 
@@ -430,7 +430,7 @@ export function checkAntigravityCliHooksStatus(): number {
 
   if (installedEvents.length === 0) {
     console.log('Hooks: Not installed');
-    console.log('Run: claude-mem install --ide antigravity\n');
+    console.log('Run: opencode-mem install --ide antigravity\n');
   } else {
     console.log(`Settings: ${GEMINI_SETTINGS_PATH}`);
     console.log(`Mode: Unified CLI (bun worker-service.cjs hook antigravity-cli)`);
@@ -443,10 +443,10 @@ export function checkAntigravityCliHooksStatus(): number {
 
   if (existsSync(GEMINI_MD_PATH)) {
     const mdContent = readFileSync(GEMINI_MD_PATH, 'utf-8');
-    if (mdContent.includes('<claude-mem-context>')) {
+    if (mdContent.includes('<opencode-mem-context>')) {
       console.log(`Context (GEMINI.md): Active (${GEMINI_MD_PATH})`);
     } else {
-      console.log('Context (GEMINI.md): exists but missing claude-mem section');
+      console.log('Context (GEMINI.md): exists but missing opencode-mem section');
     }
   } else {
     console.log('Context (GEMINI.md): No GEMINI.md found');
@@ -459,8 +459,8 @@ export function checkAntigravityCliHooksStatus(): number {
       continue;
     }
     const config = readMcpConfigTolerantly(mcpConfigPath);
-    const hasEntry = Boolean(config.mcpServers?.['claude-mem']);
-    console.log(`MCP config (${mcpConfigPath}): ${hasEntry ? 'claude-mem registered' : 'found, but no claude-mem entry'}`);
+    const hasEntry = Boolean(config.mcpServers?.['opencode-mem']);
+    console.log(`MCP config (${mcpConfigPath}): ${hasEntry ? 'opencode-mem registered' : 'found, but no opencode-mem entry'}`);
   }
 
   console.log('');
@@ -480,21 +480,21 @@ export async function handleAntigravityCliCommand(subcommand: string, _args: str
 
     default:
       console.log(`
-Claude-Mem Antigravity CLI Integration
+opencode-mem Antigravity CLI Integration
 
-Usage: claude-mem antigravity-cli <command>
+Usage: opencode-mem antigravity-cli <command>
 
 Commands:
   install             Install hooks into ~/.gemini/settings.json + MCP config
-  uninstall           Remove claude-mem hooks/MCP entries (preserves other config)
+  uninstall           Remove opencode-mem hooks/MCP entries (preserves other config)
   status              Check installation status
 
 Examples:
-  claude-mem antigravity-cli install     # Install hooks + MCP
-  claude-mem antigravity-cli status      # Check if installed
-  claude-mem antigravity-cli uninstall   # Remove hooks + MCP
+  opencode-mem antigravity-cli install     # Install hooks + MCP
+  opencode-mem antigravity-cli status      # Check if installed
+  opencode-mem antigravity-cli uninstall   # Remove hooks + MCP
 
-For more info: https://docs.claude-mem.ai/antigravity-cli/setup
+For more info: https://docs.opencode-mem.ai/antigravity-cli/setup
       `);
       return 0;
   }

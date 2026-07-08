@@ -16,15 +16,15 @@ export function normalizeRuntimeFlag(value: string | undefined): InstallRuntimeI
   return null;
 }
 
-// Phase 1d back-compat: also clear the legacy CLAUDE_MEM_SERVER_BETA_*
+// Phase 1d back-compat: also clear the legacy OPENCODE_MEM_SERVER_BETA_*
 // settings keys so an uninstall fully tears down installs done before the
 // rename.
 export const SERVER_RUNTIME_SETTINGS_KEYS: readonly string[] = Object.freeze([
-  'CLAUDE_MEM_RUNTIME',
-  'CLAUDE_MEM_SERVER_URL',
-  'CLAUDE_MEM_SERVER_API_KEY',
-  'CLAUDE_MEM_SERVER_PROJECT_ID',
-  'CLAUDE_MEM_SERVER_BETA_URL',
-  'CLAUDE_MEM_SERVER_BETA_API_KEY',
-  'CLAUDE_MEM_SERVER_BETA_PROJECT_ID',
+  'OPENCODE_MEM_RUNTIME',
+  'OPENCODE_MEM_SERVER_URL',
+  'OPENCODE_MEM_SERVER_API_KEY',
+  'OPENCODE_MEM_SERVER_PROJECT_ID',
+  'OPENCODE_MEM_SERVER_BETA_URL',
+  'OPENCODE_MEM_SERVER_BETA_API_KEY',
+  'OPENCODE_MEM_SERVER_BETA_PROJECT_ID',
 ]);

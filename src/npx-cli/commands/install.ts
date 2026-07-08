@@ -190,7 +190,7 @@ function registerPlugin(version: string): void {
   const cachePath = pluginCacheDirectory(version);
   const now = new Date().toISOString();
 
-  installedPlugins.plugins['claude-mem@thedotmack'] = [
+  installedPlugins.plugins['opencode-mem@thedotmack'] = [
     {
       scope: 'user',
       installPath: cachePath,
@@ -207,16 +207,16 @@ function enablePluginInClaudeSettings(): void {
   const settings = readJsonSafe<Record<string, any>>(claudeSettingsPath(), {});
 
   if (!settings.enabledPlugins) settings.enabledPlugins = {};
-  settings.enabledPlugins['claude-mem@thedotmack'] = true;
+  settings.enabledPlugins['opencode-mem@thedotmack'] = true;
 
   writeJsonFileAtomic(claudeSettingsPath(), settings);
 }
 
 /**
  * Disable Claude Code's built-in auto-memory by setting CLAUDE_CODE_DISABLE_AUTO_MEMORY=1
- * in ~/.claude/settings.json `env` block. claude-mem provides its own persistent memory
+ * in ~/.claude/settings.json `env` block. opencode-mem provides its own persistent memory
  * via plugin hooks; the built-in MEMORY.md system creates shadow state outside the user's
- * control and competes with claude-mem for context window tokens.
+ * control and competes with opencode-mem for context window tokens.
  *
  * Per anthropics/claude-code#23544, the env var is the only supported toggle.
  *
@@ -266,7 +266,7 @@ async function resolveClaudeAutoMemoryChoice(
       {
         value: 'disable',
         label: 'Disable auto-memory',
-        hint: 'Only if you explicitly want claude-mem to replace native startup memory.',
+        hint: 'Only if you explicitly want opencode-mem to replace native startup memory.',
       },
     ],
     initialValue: 'leave-enabled',
@@ -319,7 +319,7 @@ function makeIDETask(ideId: string, summary: InstallSummary): TaskDescriptor | n
           if (mcpResult === 0) {
             return `Cursor: hooks + MCP installed ${styleText('green', 'OK')}`;
           }
-          return `Cursor: hooks installed; MCP setup failed — run \`npx claude-mem cursor mcp\` ${styleText('yellow', '!')}`;
+          return `Cursor: hooks installed; MCP setup failed — run \`npx opencode-mem cursor mcp\` ${styleText('yellow', '!')}`;
         },
       };
     }
@@ -522,7 +522,7 @@ function applyClaudeCodePathSetupIfNeeded(): void {
   } else {
     try {
       const trailing = existing.length === 0 || existing.endsWith('\n') ? '' : '\n';
-      const block = `${trailing}\n# Added by claude-mem installer for Claude Code\n${exportLine}\n`;
+      const block = `${trailing}\n# Added by opencode-mem installer for Claude Code\n${exportLine}\n`;
       writeFileSync(configFile, existing + block, 'utf-8');
       log.success(`Added Claude Code to PATH in ${configFile}`);
     } catch (error: unknown) {
@@ -591,7 +591,7 @@ async function promptForIDESelection(): Promise<string[]> {
   const claudeCodeInfo = detectedIDEs.find((ide) => ide.id === 'claude-code');
 
   if (claudeCodeInfo && !claudeCodeInfo.detected) {
-    log.warn('Claude Code is not installed. Claude-mem works best in Claude Code, but also works with the IDEs below.');
+    log.warn('Claude Code is not installed. opencode-mem works best in Claude Code, but also works with the IDEs below.');
     const choice = await p.select<'install' | 'skip' | 'cancel'>({
       message: 'Install Claude Code now?',
       options: [
@@ -782,13 +782,13 @@ type ClaudeApiMode = 'direct' | 'gateway';
 // enums, `server-beta-worker` lockedBy marker) are intentionally preserved in
 // the source code; runtime-selector dual-accepts both `'server'` and
 // `'server-beta'` settings values, but the installer writes the new canonical
-// form `'server'` going forward (settings keys: CLAUDE_MEM_SERVER_{URL,
+// form `'server'` going forward (settings keys: OPENCODE_MEM_SERVER_{URL,
 // API_KEY,PROJECT_ID}).
 type RuntimeId = 'worker' | 'server';
 
 function readRawStoredAuthMethod(): 'subscription' | 'api-key' | 'gateway' | undefined {
   try {
-    const value = readFlatSettings(USER_SETTINGS_PATH)?.CLAUDE_MEM_CLAUDE_AUTH_METHOD;
+    const value = readFlatSettings(USER_SETTINGS_PATH)?.OPENCODE_MEM_CLAUDE_AUTH_METHOD;
     if (value === 'subscription' || value === 'api-key' || value === 'gateway') return value;
     return undefined;
   } catch {
@@ -823,17 +823,17 @@ async function promptRuntime(options: InstallOptions): Promise<RuntimeId> {
       await setupServerRuntimeNonInteractive(options);
       return 'server';
     }
-    mergeSettings({ CLAUDE_MEM_RUNTIME: 'worker' });
+    mergeSettings({ OPENCODE_MEM_RUNTIME: 'worker' });
     return 'worker';
   }
 
   if (!isInteractive) {
-    mergeSettings({ CLAUDE_MEM_RUNTIME: 'worker' });
+    mergeSettings({ OPENCODE_MEM_RUNTIME: 'worker' });
     return 'worker';
   }
 
   const selected = await p.select<RuntimeId>({
-    message: 'Which runtime should claude-mem start after install?',
+    message: 'Which runtime should opencode-mem start after install?',
     options: [
       { value: 'worker', label: 'Worker', hint: 'stable compatibility path' },
       { value: 'server', label: 'Server (beta)', hint: 'REST V1, API keys, team-ready storage' },
@@ -847,7 +847,7 @@ async function promptRuntime(options: InstallOptions): Promise<RuntimeId> {
   }
 
   mergeSettings({
-    CLAUDE_MEM_RUNTIME: selected,
+    OPENCODE_MEM_RUNTIME: selected,
   });
 
   if (selected === 'server') {
@@ -864,11 +864,11 @@ async function promptRuntime(options: InstallOptions): Promise<RuntimeId> {
 async function setupServerRuntimeNonInteractive(options: InstallOptions): Promise<void> {
   const serverBaseUrl = (options.serverUrl ?? '').trim() || DEFAULT_SERVER_RUNTIME_BASE_URL;
 
-  mergeSettings({ CLAUDE_MEM_RUNTIME: 'server', CLAUDE_MEM_SERVER_URL: serverBaseUrl });
+  mergeSettings({ OPENCODE_MEM_RUNTIME: 'server', OPENCODE_MEM_SERVER_URL: serverBaseUrl });
 
   log.info(
     'Server runtime selected. Bring up the bundled stack with '
-      + '`docker compose up -d postgres valkey claude-mem-server claude-mem-worker` '
+      + '`docker compose up -d postgres valkey opencode-mem-server opencode-mem-worker` '
       + `(pg + redis/valkey). The server listens at ${serverBaseUrl}.`,
   );
 
@@ -885,11 +885,11 @@ async function setupServerRuntimeNonInteractive(options: InstallOptions): Promis
 async function maybeBootstrapServerApiKey(): Promise<void> {
   // Only attempt if Postgres is configured. Without DATABASE_URL we cannot
   // reach the api_keys table — the operator must configure the server first
-  // and rerun `claude-mem server keys rotate`.
-  if (!process.env.CLAUDE_MEM_SERVER_DATABASE_URL) {
+  // and rerun `opencode-mem server keys rotate`.
+  if (!process.env.OPENCODE_MEM_SERVER_DATABASE_URL) {
     log.warn(
-      'Skipping local hook API key bootstrap: CLAUDE_MEM_SERVER_DATABASE_URL is not set. '
-        + 'Run `npx claude-mem server keys rotate` after configuring Postgres to provision a key.',
+      'Skipping local hook API key bootstrap: OPENCODE_MEM_SERVER_DATABASE_URL is not set. '
+        + 'Run `npx opencode-mem server keys rotate` after configuring Postgres to provision a key.',
     );
     return;
   }
@@ -899,7 +899,7 @@ async function maybeBootstrapServerApiKey(): Promise<void> {
     // [ANTI-PATTERN IGNORED]: the failure is already surfaced to the user via the interactive-aware log.warn wrapper below (p.log.warn in a TTY, console.warn otherwise), including the manual remediation command.
     log.warn(
       `Failed to bootstrap server API key: ${error instanceof Error ? error.message : String(error)}. `
-        + 'Hooks will fall back to the worker until you run `npx claude-mem server keys rotate`.',
+        + 'Hooks will fall back to the worker until you run `npx opencode-mem server keys rotate`.',
     );
   }
 }
@@ -920,15 +920,15 @@ async function bootstrapAndPersistServerApiKey(): Promise<void> {
 }
 
 async function promptProvider(options: InstallOptions): Promise<ProviderId> {
-  const initialProvider = (getSetting('CLAUDE_MEM_PROVIDER') as ProviderId) || 'claude';
+  const initialProvider = (getSetting('OPENCODE_MEM_PROVIDER') as ProviderId) || 'claude';
 
   const persistClaudeProvider = (authMethod?: 'subscription' | 'api-key' | 'gateway') => {
     const resolvedAuthMethod = authMethod ?? resolveClaudeAuthMethod();
     const wrote = mergeSettings({
-      CLAUDE_MEM_PROVIDER: 'claude',
-      CLAUDE_MEM_CLAUDE_AUTH_METHOD: resolvedAuthMethod,
+      OPENCODE_MEM_PROVIDER: 'claude',
+      OPENCODE_MEM_CLAUDE_AUTH_METHOD: resolvedAuthMethod,
     });
-    if (wrote) log.info('Saved Claude Agent SDK configuration to ~/.claude-mem/settings.json');
+    if (wrote) log.info('Saved Claude Agent SDK configuration to ~/.opencode-mem/settings.json');
   };
 
   const useSubscriptionAuth = () => {
@@ -938,7 +938,7 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
       ANTHROPIC_BASE_URL: '',
       ANTHROPIC_AUTH_TOKEN: '',
     });
-    log.info('Configured claude-mem to use your logged-in Claude SDK account.');
+    log.info('Configured opencode-mem to use your logged-in Claude SDK account.');
   };
 
   const configureDirectApiKey = async (): Promise<void> => {
@@ -1030,7 +1030,7 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
     if (tokenCancelled || tokenInput.length === 0) {
       log.info('Gateway URL saved; existing gateway token preserved.');
     } else {
-      log.info('Configured Claude Agent SDK gateway in ~/.claude-mem/.env.');
+      log.info('Configured Claude Agent SDK gateway in ~/.opencode-mem/.env.');
     }
   };
 
@@ -1040,9 +1040,9 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
         persistClaudeProvider();
         return 'claude';
       }
-      const wrote = mergeSettings({ CLAUDE_MEM_PROVIDER: options.provider });
-      if (wrote) log.info(`Saved provider=${options.provider} to ~/.claude-mem/settings.json`);
-      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set CLAUDE_MEM_${options.provider.toUpperCase()}_API_KEY and CLAUDE_MEM_PROVIDER in settings.json or env manually if not already set.`);
+      const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: options.provider });
+      if (wrote) log.info(`Saved provider=${options.provider} to ~/.opencode-mem/settings.json`);
+      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set OPENCODE_MEM_${options.provider.toUpperCase()}_API_KEY and OPENCODE_MEM_PROVIDER in settings.json or env manually if not already set.`);
       return options.provider;
     }
     return initialProvider;
@@ -1072,7 +1072,7 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
     }
 
     const apiModeResult = await p.select<ClaudeApiMode>({
-      message: 'How should claude-mem connect?',
+      message: 'How should opencode-mem connect?',
       options: [
         { value: 'direct', label: 'Anthropic API key' },
         { value: 'gateway', label: 'LiteLLM or custom gateway' },
@@ -1119,13 +1119,13 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
 
   const providerLabel = selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter';
   const keyEnvName = selectedProvider === 'gemini'
-    ? 'CLAUDE_MEM_GEMINI_API_KEY'
-    : 'CLAUDE_MEM_OPENROUTER_API_KEY';
+    ? 'OPENCODE_MEM_GEMINI_API_KEY'
+    : 'OPENCODE_MEM_OPENROUTER_API_KEY';
 
   const existingKey = getSetting(keyEnvName as keyof SettingsDefaults) as string | undefined;
   if (existingKey && existingKey.trim().length > 0) {
-    const wrote = mergeSettings({ CLAUDE_MEM_PROVIDER: selectedProvider });
-    if (wrote) log.info(`Saved provider=${selectedProvider} to ~/.claude-mem/settings.json`);
+    const wrote = mergeSettings({ OPENCODE_MEM_PROVIDER: selectedProvider });
+    if (wrote) log.info(`Saved provider=${selectedProvider} to ~/.opencode-mem/settings.json`);
     return selectedProvider;
   }
 
@@ -1143,11 +1143,11 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
 
   const apiKey = String(apiKeyResult).trim();
   const wrote = mergeSettings({
-    CLAUDE_MEM_PROVIDER: selectedProvider,
+    OPENCODE_MEM_PROVIDER: selectedProvider,
     [keyEnvName]: apiKey,
   });
   if (wrote) {
-    log.info(`Saved provider=${selectedProvider} to ~/.claude-mem/settings.json`);
+    log.info(`Saved provider=${selectedProvider} to ~/.opencode-mem/settings.json`);
   }
   return selectedProvider;
 }
@@ -1166,23 +1166,23 @@ async function promptClaudeModel(options: InstallOptions): Promise<void> {
         `Unknown Claude model: ${options.model}. Allowed: ${[...allowed].join(', ')}`,
       );
     }
-    const wrote = mergeSettings({ CLAUDE_MEM_MODEL: options.model });
+    const wrote = mergeSettings({ OPENCODE_MEM_MODEL: options.model });
     if (wrote) {
-      log.info(`Saved Claude model=${options.model} to ~/.claude-mem/settings.json`);
+      log.info(`Saved Claude model=${options.model} to ~/.opencode-mem/settings.json`);
     }
     return;
   }
   if (options.model && allowCustomModel) {
-    const wrote = mergeSettings({ CLAUDE_MEM_MODEL: options.model });
+    const wrote = mergeSettings({ OPENCODE_MEM_MODEL: options.model });
     if (wrote) {
-      log.info(`Saved gateway model=${options.model} to ~/.claude-mem/settings.json`);
+      log.info(`Saved gateway model=${options.model} to ~/.opencode-mem/settings.json`);
     }
     return;
   }
 
   if (!isInteractive) return;
 
-  const initialModel = getSetting('CLAUDE_MEM_MODEL');
+  const initialModel = getSetting('OPENCODE_MEM_MODEL');
 
   if (allowCustomModel) {
     const result = await p.text({
@@ -1198,9 +1198,9 @@ async function promptClaudeModel(options: InstallOptions): Promise<void> {
     }
 
     const selectedModel = String(result).trim();
-    const wrote = mergeSettings({ CLAUDE_MEM_MODEL: selectedModel });
+    const wrote = mergeSettings({ OPENCODE_MEM_MODEL: selectedModel });
     if (wrote) {
-      log.info(`Saved gateway model=${selectedModel} to ~/.claude-mem/settings.json`);
+      log.info(`Saved gateway model=${selectedModel} to ~/.opencode-mem/settings.json`);
     }
     return;
   }
@@ -1208,7 +1208,7 @@ async function promptClaudeModel(options: InstallOptions): Promise<void> {
   const initialValue = allowed.has(initialModel) ? initialModel : 'claude-haiku-4-5-20251001';
 
   const result = await p.select<string>({
-    message: 'Which Claude model should claude-mem use to compress observations?\nThis runs whenever you and Claude touch a file — keep it cheap and fast.',
+    message: 'Which Claude model should opencode-mem use to compress observations?\nThis runs whenever you and Claude touch a file — keep it cheap and fast.',
     options: [
       { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 (recommended — fast, cheap, great for compression)' },
       { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6 (balanced quality and cost)' },
@@ -1223,23 +1223,23 @@ async function promptClaudeModel(options: InstallOptions): Promise<void> {
   }
   const selectedModel = result as string;
 
-  const wrote = mergeSettings({ CLAUDE_MEM_MODEL: selectedModel });
+  const wrote = mergeSettings({ OPENCODE_MEM_MODEL: selectedModel });
   if (wrote) {
-    log.info(`Saved Claude model=${selectedModel} to ~/.claude-mem/settings.json`);
+    log.info(`Saved Claude model=${selectedModel} to ~/.opencode-mem/settings.json`);
   }
 }
 
 // --- CMEM Online email opt-in ----------------------------------------------
 // Interactive, optional. The CLI POSTs the email + optional note to the live
 // waitlist endpoint (cmem.ai/api/waitlist), which handles persistence, dedup,
-// and the confirmation email server-side. CLAUDE_MEM_SIGNUP_URL overrides the
+// and the confirmation email server-side. OPENCODE_MEM_SIGNUP_URL overrides the
 // default for testing/staging. No API keys ever ship in the npx package — the
 // endpoint is unauthenticated and the secret (Resend) stays server-side.
 // Anything that goes wrong here is swallowed — a marketing opt-in must never
 // block or fail the install.
 
 const DEFAULT_SIGNUP_ENDPOINT = 'https://cmem.ai/api/waitlist';
-const SIGNUP_ENDPOINT = process.env.CLAUDE_MEM_SIGNUP_URL?.trim() || DEFAULT_SIGNUP_ENDPOINT;
+const SIGNUP_ENDPOINT = process.env.OPENCODE_MEM_SIGNUP_URL?.trim() || DEFAULT_SIGNUP_ENDPOINT;
 const SIGNUP_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface StoredSignup {
@@ -1251,12 +1251,12 @@ interface StoredSignup {
 function parseStoredSignup(): StoredSignup | null {
   const flat = readFlatSettings(USER_SETTINGS_PATH);
   if (!flat) return null;
-  const email = typeof flat.CLAUDE_MEM_ONLINE_SIGNUP_EMAIL === 'string' ? flat.CLAUDE_MEM_ONLINE_SIGNUP_EMAIL : '';
+  const email = typeof flat.OPENCODE_MEM_ONLINE_SIGNUP_EMAIL === 'string' ? flat.OPENCODE_MEM_ONLINE_SIGNUP_EMAIL : '';
   if (!email) return null;
   return {
     email,
-    note: typeof flat.CLAUDE_MEM_ONLINE_SIGNUP_NOTE === 'string' ? flat.CLAUDE_MEM_ONLINE_SIGNUP_NOTE : '',
-    sent: flat.CLAUDE_MEM_ONLINE_SIGNUP_SENT === 'true',
+    note: typeof flat.OPENCODE_MEM_ONLINE_SIGNUP_NOTE === 'string' ? flat.OPENCODE_MEM_ONLINE_SIGNUP_NOTE : '',
+    sent: flat.OPENCODE_MEM_ONLINE_SIGNUP_SENT === 'true',
   };
 }
 
@@ -1316,7 +1316,7 @@ async function promptTelemetryOptIn(): Promise<void> {
 
   p.log.message(styleText('dim', 
     'Anonymous install ID only — no prompts, file paths, code, or project names, ever.\n'
-    + 'Details: https://docs.claude-mem.ai/telemetry · Change anytime: claude-mem telemetry disable',
+    + 'Details: https://docs.opencode-mem.ai/telemetry · Change anytime: opencode-mem telemetry disable',
   ));
   const consent = await p.confirm({
     message: 'Share anonymized usage data with CMEM? It is on by default and helps us make the product better.',
@@ -1336,7 +1336,7 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
   // Interactive-only, and easy to turn off for CI / scripted installs.
   if (!isInteractive) return;
   if (process.env.CI) return;
-  if (String(process.env.CLAUDE_MEM_ONLINE_OPTIN ?? '').trim().toLowerCase() === 'false') return;
+  if (String(process.env.OPENCODE_MEM_ONLINE_OPTIN ?? '').trim().toLowerCase() === 'false') return;
 
   const prior = readStoredSignup();
   if (prior) {
@@ -1344,7 +1344,7 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
     // reached the service, quietly retry once now and record the result.
     if (!prior.sent) {
       const ok = await submitOnlineSignup({ email: prior.email, note: prior.note, version });
-      if (ok) mergeSettings({ CLAUDE_MEM_ONLINE_SIGNUP_SENT: 'true' });
+      if (ok) mergeSettings({ OPENCODE_MEM_ONLINE_SIGNUP_SENT: 'true' });
     }
     return;
   }
@@ -1388,10 +1388,10 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
   // Persist locally regardless of the network result so we never re-prompt;
   // a failed send is retried silently on the next install (see above).
   mergeSettings({
-    CLAUDE_MEM_ONLINE_SIGNUP_EMAIL: email,
-    CLAUDE_MEM_ONLINE_SIGNUP_NOTE: note,
-    CLAUDE_MEM_ONLINE_SIGNUP_AT: new Date().toISOString(),
-    CLAUDE_MEM_ONLINE_SIGNUP_SENT: ok ? 'true' : 'false',
+    OPENCODE_MEM_ONLINE_SIGNUP_EMAIL: email,
+    OPENCODE_MEM_ONLINE_SIGNUP_NOTE: note,
+    OPENCODE_MEM_ONLINE_SIGNUP_AT: new Date().toISOString(),
+    OPENCODE_MEM_ONLINE_SIGNUP_SENT: ok ? 'true' : 'false',
   });
   if (ok) {
     spin.stop(`You're on the list — we'll email ${styleText('cyan', email)} your CMEM Online link.`);
@@ -1435,7 +1435,7 @@ export async function runInstallCommand(options: InstallOptions = {}): Promise<v
       if (isInteractive) {
         p.log.error(headline);
         p.log.error(err.remediation);
-        p.outro(styleText('red', 'claude-mem installation aborted.'));
+        p.outro(styleText('red', 'opencode-mem installation aborted.'));
       } else {
         console.error(`\n  ${headline}`);
         console.error(`  ${err.remediation}`);
@@ -1457,9 +1457,9 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
 
   if (isInteractive) {
     await playBanner();
-    p.intro(styleText(['bgCyan', 'black'], ' claude-mem install '));
+    p.intro(styleText(['bgCyan', 'black'], ' opencode-mem install '));
   } else {
-    console.log('claude-mem install');
+    console.log('opencode-mem install');
   }
   const marketplaceDir = marketplaceDirectory();
   const alreadyInstalled = existsSync(join(marketplaceDir, 'plugin', '.claude-plugin', 'plugin.json'));
@@ -1477,7 +1477,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   }
 
   const dot = styleText('dim', '·');
-  const segments = [`${styleText('bold', 'claude-mem')} ${styleText('cyan', `v${version}`)}`];
+  const segments = [`${styleText('bold', 'opencode-mem')} ${styleText('cyan', `v${version}`)}`];
   if (existingVersion && existingVersion !== version) {
     segments.push(`installed ${styleText('yellow', `v${existingVersion}`)}`);
   } else if (existingVersion) {
@@ -1532,7 +1532,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
 
   {
     if (needsMarketplace) {
-      const installPort = getSetting('CLAUDE_MEM_WORKER_PORT');
+      const installPort = getSetting('OPENCODE_MEM_WORKER_PORT');
       const shutdownSpinner = isInteractive ? p.spinner() : null;
       shutdownSpinner?.start('Stopping running worker (so we can overwrite cleanly)…');
       try {
@@ -1648,7 +1648,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
 
   // Optionally disable Claude Code's built-in auto-memory (CLAUDE_CODE_DISABLE_AUTO_MEMORY=1)
   // when the user explicitly opts in, either through the interactive prompt or
-  // via --disable-auto-memory. claude-mem's hook-based memory is the intended
+  // via --disable-auto-memory. opencode-mem's hook-based memory is the intended
   // source of cross-session context, but we no longer mutate settings.json silently.
   // Four-state so the summary can distinguish "wrote", "already set", "left enabled",
   // and "failed". A boolean would conflate the error path with a deliberate no-op.
@@ -1680,7 +1680,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   }
 
   // The server runtime is brought up via its own stack (Docker pg+redis +
-  // `claude-mem server start`), NOT the worker-service spawner. Skip the
+  // `opencode-mem server start`), NOT the worker-service spawner. Skip the
   // worker-only autostart entirely so the server runtime never invokes the
   // worker path (#2543).
   const autoStartSkipped = !isInteractive || options.noAutoStart || selectedRuntime === 'server';
@@ -1690,14 +1690,14 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
       title: selectedRuntime === 'server' ? 'Starting server daemon' : 'Starting worker daemon',
       task: async (message) => {
         if (selectedRuntime === 'server') {
-          return `Server runtime selected — start it with ${styleText('bold', 'npx claude-mem server start')} ${styleText('dim', '(or via Docker compose)')}`;
+          return `Server runtime selected — start it with ${styleText('bold', 'npx opencode-mem server start')} ${styleText('dim', '(or via Docker compose)')}`;
         }
         if (autoStartSkipped) {
           return isInteractive
             ? `Skipped (--no-auto-start)`
             : `Skipped (non-TTY)`;
         }
-        const port = Number(getSetting('CLAUDE_MEM_WORKER_PORT'));
+        const port = Number(getSetting('OPENCODE_MEM_WORKER_PORT'));
         const marketplaceScriptPath = join(marketplaceDirectory(), 'plugin', 'scripts', 'worker-service.cjs');
         const cacheScriptPath = join(pluginCacheDirectory(version), 'scripts', 'worker-service.cjs');
         const scriptPath = existsSync(marketplaceScriptPath) ? marketplaceScriptPath : cacheScriptPath;
@@ -1711,7 +1711,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
           case 'warming':
             return `Worker starting on port ${port} — finishing in background ${styleText('yellow', '⏳')}`;
           case 'dead':
-            return `Worker did not start — try \`npx claude-mem start\` manually ${styleText('yellow', '!')}`;
+            return `Worker did not start — try \`npx opencode-mem start\` manually ${styleText('yellow', '!')}`;
         }
       },
     },
@@ -1752,9 +1752,9 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   // spinners and summary note (a live print would be clobbered by clack).
   flushSummary(summary, (line) => (isInteractive ? p.log.message(line) : console.log(`  ${line}`)));
 
-  const workerHost = getSetting('CLAUDE_MEM_WORKER_HOST');
+  const workerHost = getSetting('OPENCODE_MEM_WORKER_HOST');
   const workerUrlHost = formatHostForUrl(workerHost);
-  const workerPort = getSetting('CLAUDE_MEM_WORKER_PORT');
+  const workerPort = getSetting('OPENCODE_MEM_WORKER_PORT');
 
   let actualPort: number | string = workerPort;
   let workerReady = false;
@@ -1793,7 +1793,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
   const finalWorkerState = workerStartResult as WorkerStartResult;
   const workerAlive = finalWorkerState !== 'dead' || workerReady;
   const runtimeLabel = selectedRuntime === 'server' ? 'Server' : 'Worker';
-  const runtimeStartCommand = selectedRuntime === 'server' ? 'npx claude-mem server start' : 'npx claude-mem start';
+  const runtimeStartCommand = selectedRuntime === 'server' ? 'npx opencode-mem server start' : 'npx opencode-mem start';
   const workerBaseUrl = `http://${workerUrlHost}:${actualPort}`;
   const configuredWorkerBaseUrl = `http://${workerUrlHost}:${workerPort}`;
   const workerHeadline = autoStartSkipped
@@ -1803,7 +1803,7 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
       : `${styleText('yellow', '⏳')} ${runtimeLabel} starting at ${styleText('underline', workerBaseUrl)} — give it ~30s, then refresh`;
   const nextStepsHeadline = autoStartSkipped || workerAlive
     ? workerHeadline
-    : `${styleText('yellow', '!')} Worker not yet ready on port ${styleText('cyan', String(workerPort))} -- still starting up; check ${styleText('bold', 'claude-mem status')} later, or start manually: ${styleText('bold', 'npx claude-mem start')}`;
+    : `${styleText('yellow', '!')} Worker not yet ready on port ${styleText('cyan', String(workerPort))} -- still starting up; check ${styleText('bold', 'opencode-mem status')} later, or start manually: ${styleText('bold', 'npx opencode-mem start')}`;
   const firstSuccessOpener = autoStartSkipped
     ? `once the worker is running, keep ${styleText('underline', configuredWorkerBaseUrl)} open in a browser`
     : workerAlive
@@ -1819,10 +1819,10 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
     `  ${styleText('cyan', 'B.')} Front-load it: open Claude Code and run ${styleText('bold', '/learn-codebase')} to ingest the whole repo (~5 min, optional).`,
     ``,
     `Memory injection starts on your second session in a project.`,
-    `Everything stays in ${styleText('cyan', '~/.claude-mem')} on this machine.`,
+    `Everything stays in ${styleText('cyan', '~/.opencode-mem')} on this machine.`,
     ``,
-    `${styleText('dim', 'How it works: /how-it-works   ·   Disable first-session hint: CLAUDE_MEM_WELCOME_HINT_ENABLED=false')}`,
-    `${styleText('dim', 'Note: close all Claude Code sessions before uninstalling, or ~/.claude-mem will be recreated by active hooks.')}`,
+    `${styleText('dim', 'How it works: /how-it-works   ·   Disable first-session hint: OPENCODE_MEM_WELCOME_HINT_ENABLED=false')}`,
+    `${styleText('dim', 'Note: close all Claude Code sessions before uninstalling, or ~/.opencode-mem will be recreated by active hooks.')}`,
   ];
 
   if (isInteractive) {
@@ -1831,18 +1831,18 @@ async function runInstallCommandInner(options: InstallOptions, summary: InstallS
     // the product is installed and working, never as a gate in front of it.
     await promptTelemetryOptIn();
     if (failedIDEs.length > 0) {
-      p.outro(styleText('yellow', 'claude-mem installed with some IDE setup failures.'));
+      p.outro(styleText('yellow', 'opencode-mem installed with some IDE setup failures.'));
     } else {
-      p.outro(styleText('green', 'claude-mem installed successfully!'));
+      p.outro(styleText('green', 'opencode-mem installed successfully!'));
     }
   } else {
     console.log('\n  Next Steps');
     nextSteps.forEach(l => console.log(`  ${l}`));
     if (failedIDEs.length > 0) {
-      console.log('\nclaude-mem installed with some IDE setup failures.');
+      console.log('\nopencode-mem installed with some IDE setup failures.');
       process.exitCode = 1;
     } else {
-      console.log('\nclaude-mem installed successfully!');
+      console.log('\nopencode-mem installed successfully!');
     }
   }
 
@@ -1872,9 +1872,9 @@ async function runRepairCommandInner(summary: InstallSummary): Promise<void> {
   let uvVersion = 'unknown';
 
   if (isInteractive) {
-    p.intro(styleText(['bgCyan', 'black'], ' claude-mem repair '));
+    p.intro(styleText(['bgCyan', 'black'], ' opencode-mem repair '));
   } else {
-    console.log('claude-mem repair');
+    console.log('opencode-mem repair');
   }
   log.info(`Version: ${styleText('cyan', version)}`);
 
@@ -1923,9 +1923,9 @@ async function runRepairCommandInner(summary: InstallSummary): Promise<void> {
   flushSummary(summary, (line) => (isInteractive ? p.log.message(line) : console.log(`  ${line}`)));
 
   if (isInteractive) {
-    p.outro(styleText('green', 'claude-mem repair complete.'));
+    p.outro(styleText('green', 'opencode-mem repair complete.'));
   } else {
-    console.log('claude-mem repair complete.');
+    console.log('opencode-mem repair complete.');
   }
 }
 
@@ -1941,7 +1941,7 @@ export async function runRepairCommand(): Promise<void> {
       if (isInteractive) {
         p.log.error(headline);
         p.log.error(err.remediation);
-        p.outro(styleText('red', 'claude-mem repair aborted.'));
+        p.outro(styleText('red', 'opencode-mem repair aborted.'));
       } else {
         console.error(`\n  ${headline}`);
         console.error(`  ${err.remediation}`);
