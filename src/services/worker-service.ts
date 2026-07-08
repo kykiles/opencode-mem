@@ -68,13 +68,6 @@ import {
 } from '../server/auth/sqlite-api-key-service.js';
 import { ServerV1Routes } from '../server/routes/v1/ServerV1Routes.js';
 
-import {
-  handleCursorCommand
-} from './integrations/CursorHooksInstaller.js';
-import {
-  handleAntigravityCliCommand
-} from './integrations/AntigravityCliHooksInstaller.js';
-
 import { DatabaseManager } from './worker/DatabaseManager.js';
 import { SessionManager } from './worker/SessionManager.js';
 import { SSEBroadcaster } from './worker/SSEBroadcaster.js';
@@ -1221,20 +1214,6 @@ async function main() {
 
     case 'worker-help': {
       printWorkerAliasHelp();
-      break;
-    }
-
-    case 'cursor': {
-      const subcommand = process.argv[3];
-      const cursorResult = await handleCursorCommand(subcommand, process.argv.slice(4));
-      process.exit(cursorResult);
-      break;
-    }
-
-    case 'antigravity-cli': {
-      const antigravitySubcommand = process.argv[3];
-      const antigravityResult = await handleAntigravityCliCommand(antigravitySubcommand, process.argv.slice(4));
-      process.exit(antigravityResult);
       break;
     }
 

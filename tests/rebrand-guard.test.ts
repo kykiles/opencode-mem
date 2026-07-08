@@ -62,3 +62,32 @@ describe("rebrand identity specifics", () => {
     expect((mod as unknown as { ClaudeMemPlugin?: unknown }).ClaudeMemPlugin).toBeUndefined();
   });
 });
+
+describe("opencode-only", () => {
+  it("no foreign IDE installers", () => {
+    const foreign = [
+      "CursorHooksInstaller",
+      "CodexCliInstaller",
+      "WindsurfHooksInstaller",
+      "OpenClawInstaller",
+      "AntigravityCliHooksInstaller",
+    ];
+    for (const name of foreign) {
+      expect(
+        existsSync(`src/services/integrations/${name}.ts`),
+        `${name}.ts still present`,
+      ).toBe(false);
+    }
+  });
+
+  it("no MCP server artifacts (opencode uses native tool)", () => {
+    expect(existsSync("plugin/.mcp.json"), "plugin/.mcp.json still present").toBe(false);
+  });
+
+  it("no foreign IDE dirs", () => {
+    const dirs = ["cursor-hooks", ".codex-plugin", ".claude-plugin", ".windsurf", ".agents", "openclaw"];
+    for (const d of dirs) {
+      expect(existsSync(d), `${d}/ still present`).toBe(false);
+    }
+  });
+});

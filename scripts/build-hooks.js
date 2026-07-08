@@ -17,11 +17,6 @@ const SERVER_SERVICE = {
   source: 'src/server/runtime/ServerService.ts'
 };
 
-const MCP_SERVER = {
-  name: 'mcp-server',
-  source: 'src/servers/mcp-server.ts'
-};
-
 const CONTEXT_GENERATOR = {
   name: 'context-generator',
   source: 'src/services/context-generator.ts'
@@ -54,168 +49,6 @@ function stripHardcodedDirname(filePath) {
   }
 }
 
-/**
- * Rule A canonical-template manifest: maps each host-managed config file's
- * command string to the buildShellCommand() options that generate it. The
- * build asserts the hand-maintained files still match the generator output so
- * the defensive shell prelude can't drift between the three files (issues
- * #1215, #1533). See src/build/hook-shell-template.ts and CLAUDE.md →
- * "Spawn-Contract Resolution".
- */
-function shellTemplateManifest(buildShellCommand, buildCodexWindowsCommand) {
-  const ccTrailing = (...tail) => [
-    'node', '"$_P/scripts/bun-runner.js"', '"$_P/scripts/worker-service.cjs"', ...tail,
-  ];
-  const claudeHook = (tail, extra = {}) => buildShellCommand({
-    host: 'claude-code', requireFile: 'bun-runner.js', requireFileSecondary: 'worker-service.cjs',
-    trailingCommand: ccTrailing(...tail), notFoundMessage: 'opencode-mem: plugin scripts not found', ...extra,
-  });
-  const codexHook = (tail) => buildShellCommand({
-    host: 'codex-cli', requireFile: 'bun-runner.js', requireFileSecondary: 'worker-service.cjs',
-    trailingCommand: ccTrailing(...tail), notFoundMessage: 'opencode-mem: plugin scripts not found',
-    extraEnv: { OPENCODE_MEM_CODEX_HOOK: '1' },
-  });
-  const codexStartupHook = () => buildShellCommand({
-    host: 'codex-cli', requireFile: 'bun-runner.js', requireFileSecondary: 'worker-service.cjs',
-    trailingCommand: [
-      '_V=$(OPENCODE_MEM_CODEX_HOOK=1 node "$_P/scripts/version-check.js" || true);',
-      'if [ -n "$_V" ]; then printf \'%s\\n\' "$_V"; else',
-      'OPENCODE_MEM_CODEX_HOOK=1', ...ccTrailing('hook', 'codex', 'context'),
-      '; fi',
-    ],
-    notFoundMessage: 'opencode-mem: plugin scripts not found',
-  });
-  const codexHookPair = (tail, options = {}) => ({
-    command: options.startupVersionCheck ? codexStartupHook() : codexHook(tail),
-    commandWindows: buildCodexWindowsCommand(tail, options),
-  });
-
-  return {
-    'plugin/hooks/hooks.json': {
-      kind: 'hooks',
-      commands: {
-        'Setup.0.0': buildShellCommand({
-          host: 'claude-code-setup', requireFile: 'version-check.js',
-          trailingCommand: ['node', '"$_P/scripts/version-check.js"'],
-          notFoundMessage: 'opencode-mem: version-check.js not found',
-        }),
-        'SessionStart.0.0': claudeHook(['start'], { trailingJson: { continue: true, suppressOutput: true } }),
-        'SessionStart.0.1': claudeHook(['hook', 'claude-code', 'context']),
-        'UserPromptSubmit.0.0': claudeHook(['hook', 'claude-code', 'session-init']),
-        'PostToolUse.0.0': claudeHook(['hook', 'claude-code', 'observation']),
-        'PreToolUse.0.0': claudeHook(['hook', 'claude-code', 'file-context']),
-        'Stop.0.0': claudeHook(['hook', 'claude-code', 'summarize']),
-      },
-    },
-    'plugin/hooks/codex-hooks.json': {
-      kind: 'hooks',
-      commands: {
-        'SessionStart.0.0': codexHookPair(['hook', 'codex', 'context'], { startupVersionCheck: true }),
-        'UserPromptSubmit.0.0': codexHookPair(['hook', 'codex', 'session-init']),
-        'PreToolUse.0.0': codexHookPair(['hook', 'codex', 'file-context']),
-        'PostToolUse.0.0': codexHookPair(['hook', 'codex', 'observation']),
-        'Stop.0.0': codexHookPair(['hook', 'codex', 'summarize']),
-      },
-    },
-    'plugin/.mcp.json': {
-      kind: 'mcp',
-      command: buildShellCommand({
-        // The mcp Node launcher derives its spawn target from requireFile, so
-        // no trailingCommand is needed (it is ignored for this host).
-        host: 'mcp', requireFile: 'mcp-server.cjs',
-        notFoundMessage: 'opencode-mem: mcp server not found',
-        mcpExtraCandidates: ['$PWD/plugin', '$PWD'],
-        mcpExtraCacheRoots: [
-          '$HOME/.codex/plugins/cache/opencode-mem-local/opencode-mem',
-          '$HOME/.codex/plugins/cache/thedotmack/claude-mem',
-        ],
-      }),
-    },
-  };
-}
-
-function hookEntryByPath(parsed, dottedPath) {
-  const [event, groupIdx, hookIdx] = dottedPath.split('.');
-  return parsed.hooks?.[event]?.[Number(groupIdx)]?.hooks?.[Number(hookIdx)] ?? null;
-}
-
-async function verifyShellTemplateCanonical() {
-  console.log('\n📋 Verifying Rule A shell templates match the canonical generator...');
-
-  // Compile src/build/hook-shell-template.ts in-memory and import it. The build
-  // runs under Node, which can't import .ts directly, so we bundle to ESM and
-  // load via a data: URL.
-  const bundled = await build({
-    entryPoints: ['src/build/hook-shell-template.ts'],
-    bundle: true,
-    platform: 'node',
-    format: 'esm',
-    write: false,
-    logLevel: 'error',
-  });
-  const moduleSource = bundled.outputFiles[0].text;
-  const dataUrl = 'data:text/javascript;base64,' + Buffer.from(moduleSource).toString('base64');
-  const { buildShellCommand, buildCodexWindowsCommand } = await import(dataUrl);
-
-  const manifest = shellTemplateManifest(buildShellCommand, buildCodexWindowsCommand);
-
-  for (const [filePath, spec] of Object.entries(manifest)) {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    if (spec.kind === 'mcp') {
-      const actual = parsed.mcpServers?.['mcp-search']?.args?.[1] ?? '';
-      if (actual !== spec.command) {
-        throw new Error(
-          `Hand-edited shell string detected in ${filePath} (mcp-search). It no longer matches src/build/hook-shell-template.ts. ` +
-          `Update the generator (and this manifest) instead of hand-editing the launcher.`
-        );
-      }
-    } else {
-      for (const [dottedPath, expected] of Object.entries(spec.commands)) {
-        const entry = hookEntryByPath(parsed, dottedPath);
-        const expectedCommand = typeof expected === 'string' ? expected : expected.command;
-        const actual = entry?.command ?? null;
-        if (actual !== expectedCommand) {
-          throw new Error(
-            `Hand-edited shell string detected in ${filePath} (${dottedPath}). It no longer matches src/build/hook-shell-template.ts. ` +
-            `Regenerate via the canonical generator instead of hand-editing the command.`
-          );
-        }
-        if (typeof expected !== 'string') {
-          const actualWindows = entry?.commandWindows ?? null;
-          if (actualWindows !== expected.commandWindows) {
-            throw new Error(
-              `Hand-edited Windows shell string detected in ${filePath} (${dottedPath}). It no longer matches src/build/hook-shell-template.ts. ` +
-              `Regenerate via the canonical generator instead of hand-editing commandWindows.`
-            );
-          }
-        }
-      }
-    }
-  }
-
-  // Rule C safety net (bun-runner.js fixBrokenScriptPath) must stay documented.
-  const bunRunner = fs.readFileSync('plugin/scripts/bun-runner.js', 'utf-8');
-  if (!bunRunner.includes('function fixBrokenScriptPath')) {
-    throw new Error(
-      'plugin/scripts/bun-runner.js is missing fixBrokenScriptPath — it is the Rule C runtime safety net behind Rule A. Do not remove it.'
-    );
-  }
-
-  // Parser-compat guard (issue #2791): bun-runner.js is invoked by hosts that
-  // may run a pre-ES2020 Node whose ESM loader throws on optional chaining.
-  // Strip comments, then forbid `?.` / `??` in executable code.
-  const bunRunnerCode = bunRunner
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
-  if (/\?\.|\?\?/.test(bunRunnerCode)) {
-    throw new Error(
-      'plugin/scripts/bun-runner.js uses optional chaining (?.) or nullish coalescing (??) — ' +
-      'this launcher must parse on pre-ES2020 Node (issue #2791). Rewrite with explicit guards.'
-    );
-  }
-
-  console.log('✓ Rule A shell templates match the canonical generator');
-}
 
 async function buildHooks() {
   console.log('🔨 Building opencode-mem hooks and worker service...\n');
@@ -439,79 +272,6 @@ async function buildHooks() {
     const serverStats = fs.statSync(`${hooksDir}/${SERVER_SERVICE.name}.cjs`);
     console.log(`✓ server-service built (${(serverStats.size / 1024).toFixed(2)} KB)`);
 
-    console.log(`\n🔧 Building MCP server...`);
-    await build({
-      entryPoints: [MCP_SERVER.source],
-      bundle: true,
-      platform: 'node',
-      target: 'node18',
-      format: 'cjs',
-      outfile: `${hooksDir}/${MCP_SERVER.name}.cjs`,
-      minify: true,
-      logLevel: 'error',
-      external: [
-        'bun:sqlite',
-        'tree-sitter-cli',
-        'tree-sitter-javascript',
-        'tree-sitter-typescript',
-        'tree-sitter-python',
-        'tree-sitter-go',
-        'tree-sitter-rust',
-        'tree-sitter-ruby',
-        'tree-sitter-java',
-        'tree-sitter-c',
-        'tree-sitter-cpp',
-        'tree-sitter-kotlin',
-        'tree-sitter-swift',
-        'tree-sitter-php',
-        '@tree-sitter-grammars/tree-sitter-lua',
-        'tree-sitter-scala',
-        'tree-sitter-bash',
-        'tree-sitter-haskell',
-        '@tree-sitter-grammars/tree-sitter-zig',
-        'tree-sitter-css',
-        'tree-sitter-scss',
-        '@tree-sitter-grammars/tree-sitter-toml',
-        '@tree-sitter-grammars/tree-sitter-yaml',
-        '@derekstride/tree-sitter-sql',
-        '@tree-sitter-grammars/tree-sitter-markdown',
-      ],
-      define: {
-        '__DEFAULT_PACKAGE_VERSION__': `"${version}"`
-      },
-      banner: {
-        js: '#!/usr/bin/env node'
-      }
-    });
-
-    stripHardcodedDirname(`${hooksDir}/${MCP_SERVER.name}.cjs`);
-
-    fs.chmodSync(`${hooksDir}/${MCP_SERVER.name}.cjs`, 0o755);
-    const mcpServerStats = fs.statSync(`${hooksDir}/${MCP_SERVER.name}.cjs`);
-    console.log(`✓ mcp-server built (${(mcpServerStats.size / 1024).toFixed(2)} KB)`);
-
-    const mcpBundleContent = fs.readFileSync(`${hooksDir}/${MCP_SERVER.name}.cjs`, 'utf-8');
-    const bunRequireRegex = /require\(\s*["']bun:[a-z][a-z0-9_-]*["']\s*\)/;
-    const bunRequireMatch = mcpBundleContent.match(bunRequireRegex);
-    if (bunRequireMatch) {
-      throw new Error(
-        `mcp-server.cjs contains a Bun-only ${bunRequireMatch[0]} call. This means a transitive import in src/servers/mcp-server.ts pulled in code from worker-service.ts (or another module that touches DatabaseManager/ChromaSync). The MCP server runs under Node and cannot load bun:* modules. Audit recent imports in src/servers/mcp-server.ts and src/services/worker-spawner.ts — the spawner module is intentionally lightweight and MUST NOT import anything that touches SQLite or other Bun-only modules. See PR #1645 for context.`
-      );
-    }
-    const zodRequireRegex = /require\(\s*["']zod(?:\/[^"']*)?["']\s*\)/;
-    const zodRequireMatch = mcpBundleContent.match(zodRequireRegex);
-    if (zodRequireMatch) {
-      throw new Error(
-        `mcp-server.cjs contains external ${zodRequireMatch[0]}. Claude Desktop can launch this bundle without plugin node_modules available, so Zod must be bundled into the MCP server.`
-      );
-    }
-
-    const MCP_SERVER_MAX_BYTES = 600 * 1024;
-    if (mcpServerStats.size > MCP_SERVER_MAX_BYTES) {
-      console.warn(
-        `⚠️  mcp-server.cjs is ${(mcpServerStats.size / 1024).toFixed(2)} KB (advisory budget ${(MCP_SERVER_MAX_BYTES / 1024).toFixed(0)} KB). If this jumped unexpectedly, a transitive import may have pulled worker-service.ts or another heavy module into the MCP bundle (see #1645).`
-      );
-    }
 
     console.log(`\n🔧 Building context generator...`);
     await build({
@@ -602,31 +362,6 @@ async function buildHooks() {
     const npxCliStats = fs.statSync(`${npxCliOutDir}/index.js`);
     console.log(`✓ npx-cli built (${(npxCliStats.size / 1024).toFixed(2)} KB)`);
 
-    if (fs.existsSync('openclaw/src/index.ts')) {
-      console.log(`\n🔧 Building OpenClaw plugin...`);
-      const openclawOutDir = 'openclaw/dist';
-      if (!fs.existsSync(openclawOutDir)) {
-        fs.mkdirSync(openclawOutDir, { recursive: true });
-      }
-      await build({
-        entryPoints: ['openclaw/src/index.ts'],
-        bundle: true,
-        platform: 'node',
-        target: 'node18',
-        format: 'esm',
-        outfile: `${openclawOutDir}/index.js`,
-        minify: true,
-        logLevel: 'error',
-        external: [
-          'fs', 'fs/promises', 'path', 'os', 'child_process', 'url',
-          'crypto', 'http', 'https', 'net', 'stream', 'util', 'events',
-        ],
-      });
-
-      const openclawStats = fs.statSync(`${openclawOutDir}/index.js`);
-      console.log(`✓ openclaw plugin built (${(openclawStats.size / 1024).toFixed(2)} KB)`);
-    }
-
     if (fs.existsSync('src/integrations/opencode-plugin/index.ts')) {
       console.log(`\n🔧 Building OpenCode plugin...`);
       const opencodeOutDir = 'dist/opencode-plugin';
@@ -663,77 +398,29 @@ async function buildHooks() {
     console.log(`✓ Copied ${onboardingExplainerSrc} → ${onboardingExplainerDst}`);
 
     console.log('\n📋 Verifying distribution files...');
-    const validCodexHookEvents = new Set([
-      'SessionStart',
-      'UserPromptSubmit',
-      'PreToolUse',
-      'PermissionRequest',
-      'PostToolUse',
-      'Stop',
-    ]);
     const requiredDistributionFiles = [
       'plugin/skills/mem-search/SKILL.md',
       'plugin/skills/smart-explore/SKILL.md',
       'plugin/skills/how-it-works/SKILL.md',
       'plugin/skills/how-it-works/onboarding-explainer.md',
-      'plugin/hooks/hooks.json',
-      'plugin/hooks/codex-hooks.json',
-      'plugin/scripts/bun-runner.js',
       'plugin/sqlite/SessionStore.js',
       'plugin/sqlite/observations/files.js',
-      'plugin/.claude-plugin/plugin.json',
-      'plugin/.codex-plugin/plugin.json',
-      'plugin/.mcp.json',
-      '.codex-plugin/plugin.json',
-      '.agents/plugins/marketplace.json',
     ];
     for (const filePath of requiredDistributionFiles) {
       if (!fs.existsSync(filePath)) {
         throw new Error(`Missing required distribution file: ${filePath}`);
       }
     }
-    const codexHooks = JSON.parse(fs.readFileSync('plugin/hooks/codex-hooks.json', 'utf-8'));
-    const validCodexHookRootKeys = new Set(['hooks']);
-    for (const rootKey of Object.keys(codexHooks)) {
-      if (!validCodexHookRootKeys.has(rootKey)) {
-        throw new Error(`plugin/hooks/codex-hooks.json contains unsupported Codex root key: ${rootKey}`);
-      }
-    }
-    for (const eventName of Object.keys(codexHooks.hooks ?? {})) {
-      if (!validCodexHookEvents.has(eventName)) {
-        throw new Error(`plugin/hooks/codex-hooks.json contains unknown Codex hook event: ${eventName}`);
-      }
-    }
-    const codexMarketplace = JSON.parse(fs.readFileSync('.agents/plugins/marketplace.json', 'utf-8'));
-    const claudeMemMarketplaceEntry = (codexMarketplace.plugins ?? []).find((plugin) => plugin.name === 'opencode-mem');
-    if (claudeMemMarketplaceEntry?.source?.path !== './plugin') {
-      throw new Error('.agents/plugins/marketplace.json must point opencode-mem source.path at ./plugin so Codex loads the bundled plugin root');
-    }
-    const bundledMcp = JSON.parse(fs.readFileSync('plugin/.mcp.json', 'utf-8'));
-    const mcpSearchCommand = bundledMcp.mcpServers?.['mcp-search']?.args?.join(' ') ?? '';
-    if (!mcpSearchCommand.includes('.codex/plugins/cache/opencode-mem-local/opencode-mem')) {
-      throw new Error('plugin/.mcp.json mcp-search launcher must include Codex cache fallback for hosts that do not inject PLUGIN_ROOT');
-    }
-    if (!mcpSearchCommand.includes('plugins/cache/thedotmack/claude-mem')) {
-      throw new Error('plugin/.mcp.json mcp-search launcher must include Claude cache fallback for hosts that do not inject PLUGIN_ROOT');
-    }
     console.log('✓ All required distribution files present');
-
-    await verifyShellTemplateCanonical();
 
     console.log('\n✅ All build targets compiled successfully!');
     console.log(`   Output: ${hooksDir}/`);
     console.log(`   - Worker: worker-service.cjs`);
     console.log(`   - Server: server-service.cjs`);
-    console.log(`   - MCP Server: mcp-server.cjs`);
     console.log(`   - Context Generator: context-generator.cjs`);
     console.log(`   - Transcript Watcher: transcript-watcher.cjs`);
     console.log(`   Output: ${npxCliOutDir}/`);
     console.log(`   - NPX CLI: index.js`);
-    if (fs.existsSync('openclaw/dist/index.js')) {
-      console.log(`   Output: openclaw/dist/`);
-      console.log(`   - OpenClaw Plugin: index.js`);
-    }
     if (fs.existsSync('dist/opencode-plugin/index.js')) {
       console.log(`   Output: dist/opencode-plugin/`);
       console.log(`   - OpenCode Plugin: index.js`);

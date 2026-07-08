@@ -356,25 +356,9 @@ export async function runUninstallCommand(): Promise<void> {
   ]);
 
   const ideCleanups: Array<{ label: string; fn: () => Promise<number> | number }> = [
-    { label: 'Windsurf hooks', fn: async () => {
-      const { uninstallWindsurfHooks } = await import('../../services/integrations/WindsurfHooksInstaller.js');
-      return uninstallWindsurfHooks();
-    }},
     { label: 'OpenCode plugin', fn: async () => {
       const { uninstallOpenCodePlugin } = await import('../../services/integrations/OpenCodeInstaller.js');
       return uninstallOpenCodePlugin();
-    }},
-    { label: 'OpenClaw plugin', fn: async () => {
-      const { uninstallOpenClawPlugin } = await import('../../services/integrations/OpenClawInstaller.js');
-      return uninstallOpenClawPlugin();
-    }},
-    { label: 'Codex CLI', fn: async () => {
-      const { uninstallCodexCli } = await import('../../services/integrations/CodexCliInstaller.js');
-      return uninstallCodexCli();
-    }},
-    { label: 'Antigravity CLI hooks + MCP', fn: async () => {
-      const { uninstallAntigravityCliHooks } = await import('../../services/integrations/AntigravityCliHooksInstaller.js');
-      return uninstallAntigravityCliHooks();
     }},
   ];
 

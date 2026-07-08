@@ -295,35 +295,6 @@ function makeIDETask(ideId: string, summary: InstallSummary): TaskDescriptor | n
   };
 
   switch (ideId) {
-    case 'claude-code': {
-      return {
-        title: 'Claude Code: registering plugin',
-        task: async () => `Claude Code: plugin registered ${styleText('green', 'OK')}`,
-      };
-    }
-
-    case 'cursor': {
-      return {
-        title: 'Cursor: installing hooks + MCP',
-        task: async (message) => {
-          message('Loading Cursor installer…');
-          const { installCursorHooks, configureCursorMcp } = await import('../../services/integrations/CursorHooksInstaller.js');
-          message('Installing Cursor hooks…');
-          const { result: cursorResult, output: hooksOutput } = await bufferConsole(() => installCursorHooks('user'));
-          if (cursorResult !== 0) {
-            recordFailure('Cursor: hook installation failed', hooksOutput);
-            return `Cursor: hook installation failed ${styleText('red', 'FAIL')}`;
-          }
-          message('Configuring Cursor MCP…');
-          const { result: mcpResult } = await bufferConsole(async () => configureCursorMcp('user'));
-          if (mcpResult === 0) {
-            return `Cursor: hooks + MCP installed ${styleText('green', 'OK')}`;
-          }
-          return `Cursor: hooks installed; MCP setup failed — run \`npx opencode-mem cursor mcp\` ${styleText('yellow', '!')}`;
-        },
-      };
-    }
-
     case 'opencode': {
       return {
         title: 'OpenCode: installing plugin',
@@ -341,103 +312,8 @@ function makeIDETask(ideId: string, summary: InstallSummary): TaskDescriptor | n
       };
     }
 
-    case 'windsurf': {
-      return {
-        title: 'Windsurf: installing hooks',
-        task: async (message) => {
-          message('Loading Windsurf installer…');
-          const { installWindsurfHooks } = await import('../../services/integrations/WindsurfHooksInstaller.js');
-          message('Installing Windsurf hooks…');
-          const { result, output } = await bufferConsole(() => installWindsurfHooks());
-          if (result !== 0) {
-            recordFailure('Windsurf: hook installation failed', output);
-            return `Windsurf: hook installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `Windsurf: hooks installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'openclaw': {
-      return {
-        title: 'OpenClaw: installing plugin',
-        task: async (message) => {
-          message('Loading OpenClaw installer…');
-          const { installOpenClawIntegration } = await import('../../services/integrations/OpenClawInstaller.js');
-          message('Copying plugin files…');
-          const { result, output } = await bufferConsole(() => installOpenClawIntegration());
-          if (result !== 0) {
-            recordFailure('OpenClaw: plugin installation failed', output);
-            return `OpenClaw: plugin installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `OpenClaw: plugin installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'codex-cli': {
-      return {
-        title: 'Codex CLI: registering hooks marketplace',
-        task: async (message) => {
-          message('Loading Codex CLI installer…');
-          const { installCodexCli } = await import('../../services/integrations/CodexCliInstaller.js');
-          message('Registering native Codex hooks…');
-          const { result, output } = await bufferConsole(() => installCodexCli(marketplaceDirectory()));
-          if (result !== 0) {
-            recordFailure('Codex CLI: integration setup failed', output);
-            return `Codex CLI: integration setup failed ${styleText('red', 'FAIL')}`;
-          }
-          return `Codex CLI: hooks marketplace registered ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'antigravity': {
-      return {
-        title: 'Antigravity: installing hooks + MCP',
-        task: async (message) => {
-          message('Loading Antigravity CLI installer…');
-          const { installAntigravityCliHooks } = await import('../../services/integrations/AntigravityCliHooksInstaller.js');
-          message('Installing Antigravity hooks + MCP…');
-          const { result, output } = await bufferConsole(() => installAntigravityCliHooks());
-          if (result !== 0) {
-            recordFailure('Antigravity: hooks + MCP installation failed', output);
-            return `Antigravity: hooks + MCP installation failed ${styleText('red', 'FAIL')}`;
-          }
-          return `Antigravity: hooks + MCP installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
-    case 'copilot-cli':
-    case 'goose':
-    case 'roo-code':
-    case 'warp': {
-      const allIDEs = detectInstalledIDEs();
-      const ideInfo = allIDEs.find((i) => i.id === ideId);
-      const ideLabel = ideInfo?.label ?? ideId;
-      return {
-        title: `${ideLabel}: installing MCP integration`,
-        task: async (message) => {
-          message('Loading MCP installer…');
-          const { MCP_IDE_INSTALLERS } = await import('../../services/integrations/McpIntegrations.js');
-          const mcpInstaller = MCP_IDE_INSTALLERS[ideId];
-          if (!mcpInstaller) {
-            return `${ideLabel}: MCP installer not found ${styleText('yellow', '!')}`;
-          }
-          message(`Configuring ${ideLabel} MCP…`);
-          const { result, output } = await bufferConsole(() => mcpInstaller());
-          if (result !== 0) {
-            recordFailure(`${ideLabel}: MCP integration failed`, output);
-            return `${ideLabel}: MCP integration failed ${styleText('red', 'FAIL')}`;
-          }
-          return `${ideLabel}: MCP integration installed ${styleText('green', 'OK')}`;
-        },
-      };
-    }
-
     default: {
-      return null;
+      throw new Error(`opencode-mem supports only --ide opencode (got: "${ideId}")`);
     }
   }
 }
