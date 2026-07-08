@@ -51,7 +51,7 @@
     "dev": "npm run build-and-sync",
     "build": "node scripts/build-hooks.js",
     "build-and-sync": "npm run build && npm run sync:opencode",
-    "sync-marketplace": "node scripts/sync-marketplace.cjs",
+    "sync:opencode": "node scripts/sync-opencode-plugin.cjs",
     "sync-marketplace:force": "node scripts/sync-marketplace.cjs --force",
     "build:binaries": "node scripts/build-worker-binary.js",
     "build:cli-binary": "bun build --compile --minify ./src/services/worker-service.ts --outfile plugin/scripts/opencode-mem",
