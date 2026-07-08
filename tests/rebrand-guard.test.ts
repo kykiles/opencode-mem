@@ -46,3 +46,19 @@ describe("rebrand guard", () => {
     expect(hits, `files still branded claude-mem: ${hits.join(", ")}`).toEqual([]);
   });
 });
+
+describe("rebrand identity specifics", () => {
+  it("context tags are opencode-mem", async () => {
+    const { CONTEXT_TAG_OPEN, CONTEXT_TAG_CLOSE } = await import(
+      "../src/utils/context-injection"
+    );
+    expect(CONTEXT_TAG_OPEN).toBe("<opencode-mem-context>");
+    expect(CONTEXT_TAG_CLOSE).toBe("</opencode-mem-context>");
+  });
+
+  it("plugin exports OpenCodeMemPlugin (not ClaudeMemPlugin)", async () => {
+    const mod = await import("../src/integrations/opencode-plugin/index");
+    expect(typeof mod.OpenCodeMemPlugin).toBe("function");
+    expect((mod as unknown as { ClaudeMemPlugin?: unknown }).ClaudeMemPlugin).toBeUndefined();
+  });
+});

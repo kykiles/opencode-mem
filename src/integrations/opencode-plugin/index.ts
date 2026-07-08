@@ -186,7 +186,7 @@ function truncate(text: string): string {
     : text;
 }
 
-export const ClaudeMemPlugin = async (ctx: OpenCodePluginContext) => {
+export const OpenCodeMemPlugin = async (ctx: OpenCodePluginContext) => {
   const projectName = ctx.project?.name || "opencode";
 
   console.log(`[opencode-mem] OpenCode plugin loading (project: ${projectName})`);
@@ -337,4 +337,4 @@ export function parseSearchResponse(text: string, query: string): string {
   return rendered;
 }
 
-export default ClaudeMemPlugin;
+export default OpenCodeMemPlugin;
