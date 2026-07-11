@@ -96,14 +96,14 @@ export class SettingsDefaultsManager {
     OPENCODE_MEM_WORKER_HOST: '127.0.0.1',
     OPENCODE_MEM_API_TIMEOUT_MS: String(getTimeout(HOOK_TIMEOUTS.API_REQUEST)),
     OPENCODE_MEM_SKIP_TOOLS: 'ListMcpResourcesTool,SlashCommand,Skill,TodoWrite,AskUserQuestion',
-    OPENCODE_MEM_PROVIDER: 'openrouter',  // Default to Qwen via DashScope (free, works in RU without VPN)
+    OPENCODE_MEM_PROVIDER: 'openrouter',  // Default to OpenCode Zen (free, uses deepseek-v4-flash-free via the Zen catalog)
     OPENCODE_MEM_CLAUDE_AUTH_METHOD: 'subscription',  // Default to logged-in Claude SDK auth (not API key)
     OPENCODE_MEM_GEMINI_API_KEY: '',  // Empty by default, can be set via UI or env
     OPENCODE_MEM_GEMINI_MODEL: 'gemini-2.5-flash-lite',  // Default Gemini model (highest free tier RPM)
     OPENCODE_MEM_GEMINI_RATE_LIMITING_ENABLED: 'true',  // Rate limiting ON by default for free tier users
     OPENCODE_MEM_OPENROUTER_API_KEY: '',  // Empty by default, can be set via UI or env
-    OPENCODE_MEM_OPENROUTER_MODEL: 'qwen-plus',  // Default: Qwen DashScope
-    OPENCODE_MEM_OPENROUTER_BASE_URL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',  // DashScope OpenAI-compatible endpoint (Qwen default); empty = default OpenRouter endpoint.
+    OPENCODE_MEM_OPENROUTER_MODEL: 'deepseek-v4-flash-free',  // Default: OpenCode Zen (deepseek-v4-flash-free)
+    OPENCODE_MEM_OPENROUTER_BASE_URL: 'https://opencode.ai/zen/v1',  // OpenCode Zen OpenAI-compatible endpoint (deepseek-v4-flash-free); empty = default OpenRouter endpoint.
     OPENCODE_MEM_OPENROUTER_SITE_URL: '',  // Optional: for OpenRouter analytics
     OPENCODE_MEM_OPENROUTER_APP_NAME: 'opencode-mem',  // App name for OpenRouter analytics
     OPENCODE_MEM_DATA_DIR: join(homedir(), '.opencode-mem'),

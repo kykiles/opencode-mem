@@ -9,7 +9,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { SettingsDefaultsManager, type SettingsDefaults } from '../../shared/SettingsDefaultsManager.js';
-import { buildProviderPreset } from './provider-presets.js';
+import { buildProviderPreset, readOpenCodeApiKey } from './provider-presets.js';
 import { USER_SETTINGS_PATH } from '../../shared/paths.js';
 import { writeJsonFileAtomic as writeSettingsJsonAtomic } from '../../shared/atomic-json.js';
 import { loadClaudeMemEnv, saveClaudeMemEnv } from '../../shared/EnvManager.js';
@@ -171,7 +171,10 @@ function registerMarketplace(): void {
   knownMarketplaces['thedotmack'] = {
     source: {
       source: 'github',
-      repo: 'thedotmack/claude-mem',
+      // opencode-mem fork source — auto-update pulls from the fork, not
+      // upstream thedotmack/claude-mem (which would clobber the fork). The local
+      // marketplace namespace key stays 'thedotmack' to match the cache/path layout.
+      repo: 'kykiles/opencode-mem',
     },
     installLocation: marketplaceDirectory(),
     lastUpdated: new Date().toISOString(),
@@ -666,7 +669,7 @@ function mergeSettings(updates: Record<string, string>): boolean {
   }
 }
 
-type ProviderId = 'qwen' | 'deepseek' | 'openrouter' | 'gemini' | 'claude';
+type ProviderId = 'opencode-go' | 'opencode-zen' | 'qwen' | 'deepseek' | 'openrouter' | 'gemini' | 'claude';
 type ClaudeAccessMode = 'subscription' | 'api-key';
 type ClaudeApiMode = 'direct' | 'gateway';
 // Phase 1d: Persisted DB literals (`server_beta_schema_migrations`, job_type
@@ -811,7 +814,26 @@ async function bootstrapAndPersistServerApiKey(): Promise<void> {
 }
 
 async function promptProvider(options: InstallOptions): Promise<ProviderId> {
-  const initialProvider = (getSetting('OPENCODE_MEM_PROVIDER') as ProviderId) || 'qwen';
+  const storedProvider = getSetting('OPENCODE_MEM_PROVIDER') as ProviderId;
+  let initialProvider: ProviderId = 'opencode-zen';
+  if (storedProvider === 'openrouter') {
+    const baseUrl = getSetting('OPENCODE_MEM_OPENROUTER_BASE_URL');
+    if (baseUrl === 'https://opencode.ai/zen/go/v1') {
+      initialProvider = 'opencode-go';
+    } else if (baseUrl === 'https://opencode.ai/zen/v1') {
+      initialProvider = 'opencode-zen';
+    } else if (baseUrl === 'https://dashscope.aliyuncs.com/compatible-mode/v1') {
+      initialProvider = 'qwen';
+    } else if (baseUrl === 'https://api.deepseek.com') {
+      initialProvider = 'deepseek';
+    } else {
+      initialProvider = 'openrouter';
+    }
+  } else if (storedProvider === 'gemini') {
+    initialProvider = 'gemini';
+  } else if (storedProvider === 'claude') {
+    initialProvider = 'claude';
+  }
 
   const persistClaudeProvider = (authMethod?: 'subscription' | 'api-key' | 'gateway') => {
     const resolvedAuthMethod = authMethod ?? resolveClaudeAuthMethod();
@@ -932,15 +954,35 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
         return 'claude';
       }
       const preset = buildProviderPreset(options.provider);
-      const wrote = mergeSettings({
+
+      const existingKey = getSetting(preset.keyEnv as keyof SettingsDefaults) as string | undefined;
+      const autoKey = (options.provider === 'opencode-go' || options.provider === 'opencode-zen')
+        ? readOpenCodeApiKey()
+        : null;
+      const effectiveKey = existingKey || autoKey;
+
+      const updates: Record<string, string> = {
         OPENCODE_MEM_PROVIDER: preset.OPENCODE_MEM_PROVIDER,
         ...(preset.OPENCODE_MEM_OPENROUTER_BASE_URL ? {
           OPENCODE_MEM_OPENROUTER_BASE_URL: preset.OPENCODE_MEM_OPENROUTER_BASE_URL,
           OPENCODE_MEM_OPENROUTER_MODEL: preset.OPENCODE_MEM_OPENROUTER_MODEL,
         } : {}),
-      });
+      };
+      if (effectiveKey) {
+        updates[preset.keyEnv] = effectiveKey;
+      }
+
+      const wrote = mergeSettings(updates);
       if (wrote) log.info(`Saved provider=${options.provider} to ~/.opencode-mem/settings.json`);
-      log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set ${preset.keyEnv} in settings.json or env manually if not already set.`);
+      if (options.provider === 'opencode-go' || options.provider === 'opencode-zen') {
+        if (effectiveKey) {
+          log.info('Auto-read OpenCode subscription key from ~/.local/share/opencode/auth.json');
+        } else {
+          log.warn('OpenCode subscription key not found in ~/.local/share/opencode/auth.json. Set OPENCODE_MEM_OPENROUTER_API_KEY in settings.json or env manually.');
+        }
+      } else {
+        log.warn(`Provider=${options.provider} requested non-interactively. API key prompt skipped — set ${preset.keyEnv} in settings.json or env manually if not already set.`);
+      }
       return options.provider;
     }
     return initialProvider;
@@ -997,7 +1039,9 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
     const providerResult = await p.select<ProviderId>({
       message: 'Which memory provider do you want to use?',
       options: [
-        { value: 'qwen', label: 'Qwen qwen-plus (DashScope) — recommended (free, works in RU without VPN)' },
+        { value: 'opencode-zen', label: 'OpenCode Zen (deepseek-v4-flash-free) — recommended (free, uses your OpenCode subscription key)' },
+        { value: 'opencode-go', label: 'OpenCode Go (deepseek-v4-flash)' },
+        { value: 'qwen', label: 'Qwen qwen-plus (DashScope) — free, works in RU without VPN' },
         { value: 'deepseek', label: 'DeepSeek deepseek-chat' },
         { value: 'openrouter', label: 'OpenRouter (any model, bring your own key)' },
         { value: 'gemini', label: 'Gemini' },
@@ -1022,16 +1066,30 @@ async function promptProvider(options: InstallOptions): Promise<ProviderId> {
   const keyEnvName = preset.keyEnv;
 
   const existingKey = getSetting(keyEnvName as keyof SettingsDefaults) as string | undefined;
-  if (existingKey && existingKey.trim().length > 0) {
+  const autoKey = (selectedProvider === 'opencode-go' || selectedProvider === 'opencode-zen')
+    ? readOpenCodeApiKey()
+    : null;
+  const effectiveKey = existingKey || autoKey;
+  if (effectiveKey && effectiveKey.trim().length > 0) {
     const wrote = mergeSettings({
       OPENCODE_MEM_PROVIDER: preset.OPENCODE_MEM_PROVIDER,
       ...(preset.OPENCODE_MEM_OPENROUTER_BASE_URL ? {
         OPENCODE_MEM_OPENROUTER_BASE_URL: preset.OPENCODE_MEM_OPENROUTER_BASE_URL,
         OPENCODE_MEM_OPENROUTER_MODEL: preset.OPENCODE_MEM_OPENROUTER_MODEL,
       } : {}),
+      [keyEnvName]: effectiveKey,
     });
-    if (wrote) log.info(`Saved provider=${selectedProvider} to ~/.opencode-mem/settings.json`);
+    const source = autoKey ? ' (auto-read from OpenCode subscription)' : '';
+    if (wrote) log.info(`Saved provider=${selectedProvider}${source} to ~/.opencode-mem/settings.json`);
     return selectedProvider;
+  }
+
+  // For opencode-go/opencode-zen, auto-read from auth.json failed — fall back
+  // to Claude since there is no meaningful separate API key to prompt for.
+  if (selectedProvider === 'opencode-go' || selectedProvider === 'opencode-zen') {
+    log.warn(`OpenCode subscription key not found in ~/.local/share/opencode/auth.json. Falling back to Claude provider.`);
+    persistClaudeProvider();
+    return 'claude';
   }
 
   const apiKeyResult = await p.password({
@@ -1311,7 +1369,7 @@ async function promptCmemOnlineOptIn(version: string): Promise<void> {
 
 export interface InstallOptions {
   ide?: string;
-  provider?: 'qwen' | 'deepseek' | 'openrouter' | 'gemini' | 'claude';
+  provider?: 'opencode-go' | 'opencode-zen' | 'qwen' | 'deepseek' | 'openrouter' | 'gemini' | 'claude';
   model?: string;
   noAutoStart?: boolean;
   disableAutoMemory?: boolean;

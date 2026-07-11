@@ -21,20 +21,22 @@ Restart OpenCode. Context from previous sessions will automatically appear in ne
 
 ## AI Provider
 
-Default: **Qwen `qwen-plus` via DashScope (Alibaba)** — free tier, works in Russia without VPN, OpenAI-compatible API.
+Default: **OpenCode Zen (`deepseek-v4-flash-free`)** — free, fast, uses your OpenCode subscription key (auto-read from `~/.local/share/opencode/auth.json`).
 
-Alternatives selectable during install: DeepSeek (`deepseek-chat`), OpenRouter (any model), Gemini, Claude Agent SDK.
+Alternatives selectable during install: OpenCode Go, Qwen (DashScope), DeepSeek, OpenRouter (any model), Gemini, Claude Agent SDK.
 
-Configure your DashScope API key during install, or set it manually in `~/.opencode-mem/settings.json`:
+Configure your API key during install, or set it manually in `~/.opencode-mem/settings.json`:
 
 ```json
 {
   "OPENCODE_MEM_PROVIDER": "openrouter",
-  "OPENCODE_MEM_OPENROUTER_BASE_URL": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  "OPENCODE_MEM_OPENROUTER_MODEL": "qwen-plus",
-  "OPENCODE_MEM_OPENROUTER_API_KEY": "<your-dashscope-key>"
+  "OPENCODE_MEM_OPENROUTER_BASE_URL": "https://opencode.ai/zen/v1",
+  "OPENCODE_MEM_OPENROUTER_MODEL": "deepseek-v4-flash-free",
+  "OPENCODE_MEM_OPENROUTER_API_KEY": "<your-opencode-subscription-key>"
 }
 ```
+
+For the `opencode-zen` preset the key is auto-read from your OpenCode subscription; no manual setup needed.
 
 ## File Locations
 

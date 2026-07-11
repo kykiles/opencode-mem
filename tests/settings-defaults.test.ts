@@ -1,12 +1,12 @@
 import { describe, it, expect } from "bun:test";
 import { SettingsDefaultsManager } from "../src/shared/SettingsDefaultsManager";
 
-describe("Qwen default preset", () => {
-  it("defaults provider to openrouter with Qwen DashScope", () => {
+describe("OpenCode Zen default preset", () => {
+  it("defaults provider to openrouter with OpenCode Zen", () => {
     expect(SettingsDefaultsManager.get("OPENCODE_MEM_PROVIDER")).toBe("openrouter");
     expect(SettingsDefaultsManager.get("OPENCODE_MEM_OPENROUTER_BASE_URL"))
-      .toBe("https://dashscope.aliyuncs.com/compatible-mode/v1");
-    expect(SettingsDefaultsManager.get("OPENCODE_MEM_OPENROUTER_MODEL")).toBe("qwen-plus");
+      .toBe("https://opencode.ai/zen/v1");
+    expect(SettingsDefaultsManager.get("OPENCODE_MEM_OPENROUTER_MODEL")).toBe("deepseek-v4-flash-free");
   });
 
   it("keeps claude as a selectable alternative", () => {
