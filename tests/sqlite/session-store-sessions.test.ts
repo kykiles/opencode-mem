@@ -91,18 +91,18 @@ describe('SessionStore session lifecycle', () => {
   });
 
   describe('platform_source', () => {
-    it('defaults to claude', () => {
+    it('defaults to opencode', () => {
       const id = store.createSDKSession('content-platform-1', 'project', 'prompt');
-      expect(store.getSessionById(id)?.platform_source).toBe('claude');
+      expect(store.getSessionById(id)?.platform_source).toBe('opencode');
     });
 
-    it('uses claude when a legacy caller omits platform_source', () => {
+    it('uses opencode when a legacy caller omits platform_source', () => {
       const id = store.createSDKSession('content-platform-2', 'project', 'prompt', undefined, 'codex');
       expect(store.getSessionById(id)?.platform_source).toBe('codex');
 
       const defaultId = store.createSDKSession('content-platform-2', 'project', 'prompt');
       expect(defaultId).not.toBe(id);
-      expect(store.getSessionById(defaultId)?.platform_source).toBe('claude');
+      expect(store.getSessionById(defaultId)?.platform_source).toBe('opencode');
     });
 
     it('allows the same raw content_session_id for different platform_source values', () => {

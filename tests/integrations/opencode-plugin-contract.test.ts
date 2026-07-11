@@ -21,7 +21,6 @@ import {
 // key must be in this allowlist; a future typo (e.g. "session.created") fails.
 const REAL_OPENCODE_HOOK_NAMES = new Set<string>([
   "tool.execute.after",
-  "chat.message",
   "event",
   "experimental.session.compacting",
   "tool.execute.before",
@@ -66,9 +65,9 @@ describe("OpenCode plugin event contract", () => {
       expect(REAL_OPENCODE_HOOK_NAMES.has(hook)).toBe(true);
     }
 
-    // The capture-critical hooks must be present.
+    // The capture-critical hooks must be present. (`chat.message` is not a real
+    // OpenCode hook — capture is driven by `tool.execute.after`; see #2435.)
     expect(hookKeys).toContain("tool.execute.after");
-    expect(hookKeys).toContain("chat.message");
     expect(hookKeys).toContain("experimental.session.compacting");
     expect(hookKeys).toContain("event");
   });

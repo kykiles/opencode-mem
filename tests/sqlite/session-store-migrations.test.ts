@@ -552,7 +552,7 @@ describe('SessionStore migrations', () => {
       expect(sessionCols.has('platform_source')).toBe(true);
 
       const session = db.prepare('SELECT platform_source FROM sdk_sessions WHERE id = 7').get() as { platform_source: string };
-      expect(session.platform_source).toBe('claude');
+      expect(session.platform_source).toBe('opencode');
       expect(hasUniqueIndexOnColumns(db, 'sdk_sessions', ['platform_source', 'content_session_id'])).toBe(true);
     } finally {
       db.close();
@@ -620,10 +620,10 @@ describe('SessionStore migrations', () => {
       const legacySession = db.prepare(`
         SELECT id, platform_source
         FROM sdk_sessions
-        WHERE content_session_id = 'shared-raw-id' AND platform_source = 'claude'
+        WHERE content_session_id = 'shared-raw-id' AND platform_source = 'opencode'
       `).get() as { id: number; platform_source: string } | undefined;
       expect(legacySession?.id).toBe(101);
-      expect(legacySession?.platform_source).toBe('claude');
+      expect(legacySession?.platform_source).toBe('opencode');
 
       expect(hasUniqueIndexOnColumns(db, 'sdk_sessions', ['content_session_id'])).toBe(false);
       expect(hasUniqueIndexOnColumns(db, 'sdk_sessions', ['platform_source', 'content_session_id'])).toBe(true);
