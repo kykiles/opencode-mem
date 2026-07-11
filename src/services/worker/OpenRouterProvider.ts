@@ -3,6 +3,7 @@ import { getCredential } from '../../shared/EnvManager.js';
 import { resolveOpenRouterChatCompletionsUrl } from '../../shared/openrouter-base-url.js';
 import { SettingsDefaultsManager } from '../../shared/SettingsDefaultsManager.js';
 import { USER_SETTINGS_PATH } from '../../shared/paths.js';
+import { readOpenCodeApiKey } from '../../npx-cli/commands/provider-presets.js';
 import { logger } from '../../utils/logger.js';
 import type { ActiveSession, ConversationMessage } from '../worker-types.js';
 import { DatabaseManager } from './DatabaseManager.js';
@@ -332,7 +333,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider<OpenRouterConfi
     const settingsPath = USER_SETTINGS_PATH;
     const settings = SettingsDefaultsManager.loadFromFile(settingsPath);
 
-    const apiKey = settings.OPENCODE_MEM_OPENROUTER_API_KEY || getCredential('OPENROUTER_API_KEY') || '';
+    const apiKey = settings.OPENCODE_MEM_OPENROUTER_API_KEY || getCredential('OPENROUTER_API_KEY') || readOpenCodeApiKey() || '';
 
     // Model is passed verbatim — any OpenAI-compatible model id is accepted
     // (e.g. deepseek-chat, an LM Studio local model). #2393. Settings are raw
@@ -361,7 +362,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider<OpenRouterConfi
 export function isOpenRouterAvailable(): boolean {
   const settingsPath = USER_SETTINGS_PATH;
   const settings = SettingsDefaultsManager.loadFromFile(settingsPath);
-  return !!(settings.OPENCODE_MEM_OPENROUTER_API_KEY || getCredential('OPENROUTER_API_KEY'));
+  return !!(settings.OPENCODE_MEM_OPENROUTER_API_KEY || getCredential('OPENROUTER_API_KEY') || readOpenCodeApiKey());
 }
 
 export function isOpenRouterSelected(): boolean {

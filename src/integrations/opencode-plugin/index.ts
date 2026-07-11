@@ -10,7 +10,6 @@ import { SettingsDefaultsManager } from "../../shared/SettingsDefaultsManager.js
  * step 1, cross-checked against OpenCode's documented plugin API):
  *
  *   - `tool.execute.after`            (input, output) — fires after every tool run
- *   - `chat.message`                  ({}, output)    — fires on each chat message
  *   - `event`                         ({ event })     — generic bus; event.type carries the name
  *   - `experimental.session.compacting`               — fires when a session compacts
  *
@@ -18,7 +17,7 @@ import { SettingsDefaultsManager } from "../../shared/SettingsDefaultsManager.js
  * `event.type`. The only bus event types opencode-mem reacts to are
  * `session.deleted` (forget the session mapping) and `session.idle` (best-effort
  * summarize). Session creation/observation capture is driven by the dedicated
- * `tool.execute.after` / `chat.message` hooks above, not by bus events — that is
+ * `tool.execute.after` hook above, not by bus events — that is
  * the #2435 fix: the old code subscribed to non-existent bus types
  * (`session.created`, `message.updated`, `session.compacted`, `file.edited`)
  * and therefore captured nothing.
@@ -37,7 +36,6 @@ type RealOpenCodeEventType = (typeof REAL_OPENCODE_EVENT_TYPES)[number];
 /** The hook keys this plugin returns. The contract test asserts these are the real OpenCode hook names. */
 export const REGISTERED_OPENCODE_HOOKS = [
   "tool.execute.after",
-  "chat.message",
   "event",
   "experimental.session.compacting",
 ] as const;
@@ -67,15 +65,6 @@ interface ToolExecuteAfterOutput {
   output: string;
   metadata: Record<string, unknown>;
   args?: Record<string, unknown>;
-}
-
-interface ChatMessageOutput {
-  message: {
-    id?: string;
-    role?: string;
-    sessionID?: string;
-  };
-  parts: Array<{ type: string; text?: string }>;
 }
 
 interface SessionCompactingInput {
@@ -175,6 +164,7 @@ function ensureSessionInitialized(openCodeSessionId: string, projectName: string
       contentSessionId,
       project: projectName,
       prompt: "",
+      platformSource: "opencode",
     });
   }
   return contentSessionId;
@@ -204,31 +194,6 @@ export const OpenCodeMemPlugin = async (ctx: OpenCodePluginContext) => {
         tool_name: input.tool,
         tool_input: output.args || {},
         tool_response: truncate(output.output || ""),
-        cwd: ctx.directory,
-      });
-    },
-
-    // Capture assistant chat messages as observations.
-    "chat.message": async (
-      _input: Record<string, unknown>,
-      output: ChatMessageOutput,
-    ): Promise<void> => {
-      const sessionID = output.message?.sessionID;
-      if (!sessionID) return;
-      if (output.message?.role !== "assistant") return;
-
-      const contentSessionId = ensureSessionInitialized(sessionID, projectName);
-      const messageText = (output.parts || [])
-        .filter((part) => part.type === "text" && typeof part.text === "string")
-        .map((part) => part.text as string)
-        .join("\n");
-      if (!messageText) return;
-
-      workerPostFireAndForget("/api/sessions/observations", {
-        contentSessionId,
-        tool_name: "assistant_message",
-        tool_input: {},
-        tool_response: truncate(messageText),
         cwd: ctx.directory,
       });
     },

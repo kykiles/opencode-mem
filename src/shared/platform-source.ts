@@ -1,4 +1,4 @@
-export const DEFAULT_PLATFORM_SOURCE = 'claude';
+export const DEFAULT_PLATFORM_SOURCE = 'opencode';
 
 function sanitizeRawSource(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, '-');
@@ -11,6 +11,7 @@ export function normalizePlatformSource(value?: string | null): string {
   if (!source) return DEFAULT_PLATFORM_SOURCE;
 
   if (source === 'transcript') return 'codex';
+  if (source.includes('opencode')) return 'opencode';
   if (source.includes('codex')) return 'codex';
   if (source.includes('cursor')) return 'cursor';
   if (source.includes('claude')) return 'claude';
@@ -24,7 +25,7 @@ export function normalizePlatformSourceOrNull(value?: string | null): string | n
 }
 
 export function sortPlatformSources(sources: string[]): string[] {
-  const priority = ['claude', 'codex', 'cursor'];
+  const priority = ['opencode', 'claude', 'codex', 'cursor'];
 
   return [...sources].sort((a, b) => {
     const aPriority = priority.indexOf(a);
